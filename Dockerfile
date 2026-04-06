@@ -23,27 +23,37 @@ RUN apt-get update && \
 		cmake \
 		git \
 		python3-pip \
-		python3-cffi \
+		python3-cffi \ 
+		python3-setuptools \
+		python3-wheel \
+		python3-dev \
 		pkg-config \
 		vim tmux gdb \
 		iputils-ping \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir \
-	toml \
-	pyserial \
-	jetson-stats \
-	pymavlink
+# Make python3 the default python
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+
+# Install Python packages
+RUN python3 -m pip install --no-cache-dir \
+    "Cython<3.0" \
+    pyserial \
+    toml \
+    jetson-stats \
+    "pymavlink==2.4.40"
 
 WORKDIR /root/dev
 
-ARG GITHUB_TOKEN=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
-ARG TAG="dev"
+ARG INTERFACES_TAG="v0.5.0"
+ARG ATTITUDE_TAG="dev"
 
-# Clone needed repos
-RUN mkdir src && \
-	git clone --branch=${TAG} --depth 1 https://${GITHUB_TOKEN}@github.com/JerichoGroup/ibn_attitude.git src/ibn_attitude && \
-	git clone --branch=${TAG} --depth 1 https://${GITHUB_TOKEN}@github.com/JerichoGroup/interfaces.git src/interfaces
+# Clone needed repos using the secret GITHUB_TOKEN
+RUN --mount=type=secret,id=gh_token \
+    GITHUB_TOKEN=$(cat /run/secrets/gh_token) && \
+    mkdir src && \
+	git clone --branch=${ATTITUDE_TAG} --depth 1 https://$GITHUB_TOKEN:x-oauth-basic@github.com/JerichoGroup/ibn_attitude.git src/ibn_attitude && \
+	git clone --branch=${INTERFACES_TAG} --depth 1 https://$GITHUB_TOKEN:x-oauth-basic@github.com/JerichoGroup/interfaces.git src/interfaces
 
 # Build ROS2 workspace
 RUN . /opt/ros/${ROS_DISTRO}/install/setup.sh && \
