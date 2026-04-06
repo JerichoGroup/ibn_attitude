@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  pixhawk_bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pixhawk_bridge:ibn
+    container_name: pixhawk_bridge
+    privileged: true
+    network_mode: host
+    command: bash
