@@ -1,0 +1,6 @@
+[topics]
+attitude_topic_name = "/mavlink/attitude"
+altitude_topic_name = "/mavlink/altitude"
+
+[mavlink]
+hz = 50
