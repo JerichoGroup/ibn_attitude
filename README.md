@@ -42,7 +42,16 @@ with defaults being:
   &nbsp;
 
     build the docker:  
-    ```docker build```
+    ```
+    docker buildx create --use
+    docker buildx build \
+      --platform linux/arm64 \
+      --secret id=gh_token,src=./ibn_token_secret \
+      -t pixhawk_bridge:ibn .
+    ```
 
+    
     run the docker:  
-    ```docker run```
+    ```
+    docker run
+    ```
