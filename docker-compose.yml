@@ -1,12 +1,27 @@
 version: "3.8"
-
 services:
   pixhawk_bridge:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: pixhawk_bridge:ibn
+      dockerfile: Dockerfile.pc
+      secrets:
+        - gh_token
     container_name: pixhawk_bridge
-    privileged: true
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./:/root/dev/src/ibn_attitude
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
+      - /dev/ttyACM1:/dev/ttyACM1
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+    stdin_open: true
+    tty: true
     network_mode: host
-    command: bash
+    privileged: true
+    restart: unless-stopped
+
+secrets:
+  gh_token:
+    file: ./ibn_token_secret
