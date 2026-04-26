@@ -23,7 +23,7 @@ RUN apt-get update && \
 		cmake \
 		git \
 		python3-pip \
-		python3-cffi \ 
+		python3-cffi \
 		python3-setuptools \
 		python3-wheel \
 		python3-dev \
