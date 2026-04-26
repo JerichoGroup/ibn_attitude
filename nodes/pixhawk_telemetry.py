@@ -59,10 +59,12 @@ class MAVLinkClient:
         )
 
         self._latest = {}
+        self._lock = threading.Lock()
         self._running = True
 
         self._thread = threading.Thread(target=self._read_loop, daemon=True)
         self._thread.start()
+
 
     def _read_loop(self):
         while self._running:
@@ -70,17 +72,27 @@ class MAVLinkClient:
             if msg is None:
                 continue
 
-            self._latest[msg.get_type()] = msg
+            msg_type = msg.get_type()
+
+            with self._lock:
+                self._latest[msg_type] = msg
+
 
     def get_latest(self, msg_type: str):
-        return self._latest.get(msg_type)
+        with self._lock:
+            return self._latest.get(msg_type)
+
 
     def stop(self):
         self._running = False
+        self._thread.join(timeout=2)
 
 
 # ======== Translator Layer ======== #
 class MavlinkTranslator:
+    """
+    Translates MAVLink messages to ROS2 messages.
+    """
 
     @staticmethod
     def header(node: Node) -> Header:
@@ -125,6 +137,10 @@ class MavlinkTranslator:
 
 # ============= ROS Node ============= #
 class PixhawkTelemetry(Node):
+    """
+    ROS2 node that reads telemetry from Pixhawk via MAVLink and publishes it as ROS messages.
+    Publishes both the current global position and attitude, as well as the initial position at startup.
+    """
 
     def __init__(self, config: dict):
         super().__init__("pixhawk_telemetry_node")
