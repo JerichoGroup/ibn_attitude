@@ -52,19 +52,20 @@ WORKDIR /root/dev
 
 ARG INTERFACES_TAG="v0.5.0"
 ARG ATTITUDE_TAG="dev"
+ARG PKG_TAG="fixing_ros_pkg"
 
 RUN --mount=type=secret,id=gh_token \
     GITHUB_TOKEN=$(cat /run/secrets/gh_token) && \
     mkdir -p src && \
-    git clone --branch=${ATTITUDE_TAG} --depth 1 \
+    git clone --branch=${PKG_TAG} --depth 1 \
     https://$GITHUB_TOKEN:x-oauth-basic@github.com/JerichoGroup/ibn_attitude.git src/ibn_attitude && \
     git clone --branch=${INTERFACES_TAG} --depth 1 \
     https://$GITHUB_TOKEN:x-oauth-basic@github.com/JerichoGroup/interfaces.git src/interfaces
 
 # -------------------- Build --------------------
 RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
-    rosdep install --from-paths src --ignore-src -r -y && \
-    colcon build --symlink-install --cmake-args "-DBUILD_TESTING=OFF"
+    rosdep install --from-paths src --ignore-src -r -y
+    # colcon build --symlink-install --cmake-args "-DBUILD_TESTING=OFF"
 
 # ==================== RUNTIME ====================
 FROM ubuntu:20.04
@@ -78,4 +79,7 @@ COPY --from=build / /
 WORKDIR /root/dev
 SHELL ["/bin/bash", "-c"]
 
-ENTRYPOINT ["/bin/bash"]
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

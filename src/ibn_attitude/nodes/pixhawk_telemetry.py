@@ -1,15 +1,16 @@
 # ============ Imports ============ #
 import logging
-import threading
 from pathlib import Path
 import yaml
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Header
 
-from pymavlink import mavutil
 from interfaces.msg import GlobalPositionInt, Attitude
+
+from mavlink.client import MAVLinkClient
+from mavlink.translator import MavlinkTranslator
+
 
 
 # ========= Config Loader ========= #
@@ -29,110 +30,6 @@ if not logger.handlers:
     )
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-
-
-# ========= MAVLink Client ========= #
-class MAVLinkClient:
-    """
-    Continuous MAVLink reader (threaded).
-    Stores ONLY latest message per type.
-    """
-
-    def __init__(self, connection_string: str, baud_rate: int, stream_rate_hz: int):
-        self._master = mavutil.mavlink_connection(
-            connection_string,
-            baud=baud_rate
-        )
-
-        logger.info("Waiting for heartbeat...")
-        if not self._master.wait_heartbeat(timeout=10):
-            raise RuntimeError("No heartbeat received")
-
-        logger.info("Connected to Pixhawk")
-
-        self._master.mav.request_data_stream_send(
-            self._master.target_system,
-            self._master.target_component,
-            mavutil.mavlink.MAV_DATA_STREAM_ALL,
-            stream_rate_hz,
-            1
-        )
-
-        self._latest = {}
-        self._lock = threading.Lock()
-        self._running = True
-
-        self._thread = threading.Thread(target=self._read_loop, daemon=True)
-        self._thread.start()
-
-
-    def _read_loop(self):
-        while self._running:
-            msg = self._master.recv_match(blocking=True, timeout=1)
-            if msg is None:
-                continue
-
-            msg_type = msg.get_type()
-
-            with self._lock:
-                self._latest[msg_type] = msg
-
-
-    def get_latest(self, msg_type: str):
-        with self._lock:
-            return self._latest.get(msg_type)
-
-
-    def stop(self):
-        self._running = False
-        self._thread.join(timeout=2)
-
-
-# ======== Translator Layer ======== #
-class MavlinkTranslator:
-    """
-    Translates MAVLink messages to ROS2 messages.
-    """
-
-    @staticmethod
-    def header(node: Node) -> Header:
-        h = Header()
-        h.stamp = node.get_clock().now().to_msg()
-        return h
-
-    @staticmethod
-    def to_global_position(node: Node, msg) -> GlobalPositionInt:
-        ros_msg = GlobalPositionInt()
-        ros_msg.header = MavlinkTranslator.header(node)
-
-        ros_msg.time_boot_ms = msg.time_boot_ms
-        ros_msg.lat = msg.lat
-        ros_msg.lon = msg.lon
-        ros_msg.msl_altitude = msg.alt
-        ros_msg.relative_altitude = msg.relative_alt
-
-        ros_msg.vx = int(msg.vx)
-        ros_msg.vy = int(msg.vy)
-        ros_msg.vz = int(msg.vz)
-        ros_msg.vehicle_heading_angle = int(msg.hdg)
-
-        return ros_msg
-
-    @staticmethod
-    def to_attitude(node: Node, msg) -> Attitude:
-        ros_msg = Attitude()
-        ros_msg.header = MavlinkTranslator.header(node)
-
-        ros_msg.time_boot_ms = msg.time_boot_ms
-        ros_msg.roll = msg.roll
-        ros_msg.pitch = msg.pitch
-        ros_msg.yaw = msg.yaw
-
-        ros_msg.rollspeed = msg.rollspeed
-        ros_msg.pitchspeed = msg.pitchspeed
-        ros_msg.yawspeed = msg.yawspeed
-
-        return ros_msg
 
 
 # ============= ROS Node ============= #
