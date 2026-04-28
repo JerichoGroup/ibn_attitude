@@ -8,7 +8,7 @@ import yaml
 from ament_index_python import get_package_share_directory
 from rclpy.node import Node
 
-from your_msgs.msg import IbnResult
+from interfaces.msg import IBNResult
 
 from ibn_mavlink.gps_injection.converter import IbnToGPSConverter
 from ibn_mavlink.gps_injection.sender import GPSLogger
