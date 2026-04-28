@@ -1,0 +1,5 @@
+ros:
+  ibn_result_topic: "/IBN/result"
+
+log:
+  file_path: "/tmp/gps_injection.log"

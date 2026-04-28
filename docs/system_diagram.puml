@@ -1,0 +1,55 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam componentStyle rectangle
+
+title ibn_attitude Data Flow
+
+package "Hardware" {
+  [Pixhawk\n(ArduCopter)] as pixhawk
+}
+
+package "ROS 2 Nodes" {
+  [pixhawk_bridge\n(Attitude Node)] as att_node
+  [IBN Algorithm] as ibn_algo
+  [gps_injection\n(GPS Inject)] as gps_node
+}
+
+package "ROS 2 Topics" {
+  [mavlink/attitude] as att_topic
+  [mavlink/altitude] as alt_topic
+}
+
+pixhawk <--> att_node : Serial (MAVLink)
+
+att_node --> att_topic : Publish
+att_topic --> ibn_algo : Subscribe
+
+ibn_algo --> gps_node : Process
+gps_node --> alt_topic : Publish
+gps_node --> pixhawk : Inject GPS
+
+note right of pixhawk
+  Reads telemetry:
+  - roll, pitch, yaw
+  - angular rates
+  - altitude
+end note
+
+note right of att_node
+  Connects to Pixhawk
+  via serial port
+  Polls at configurable Hz
+end note
+
+note right of ibn_algo
+  Processing &
+  filtering
+end note
+
+note right of gps_node
+  Injects GPS data
+  back to Pixhawk
+  for better accuracy
+end note
+
+@enduml

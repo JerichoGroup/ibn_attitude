@@ -4,12 +4,11 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-      # secrets:
-      #   - gh_token
-    image: pixhawk_bridge:ibn
-    container_name: pixhawk_bridge
-    # volumes:
-      # - ./src:/root/dev/src
+      secrets:
+        - gh_token
+    container_name: pixhawk_bridge_arm
+    volumes:
+      - ./src:/root/dev/src
     devices:
       - /dev/ttyACM0:/dev/ttyACM0
       - /dev/ttyACM1:/dev/ttyACM1
@@ -25,6 +24,6 @@ services:
     command: "bash"
 
 
-# secrets:
-#   gh_token:
-#     file: ./ibn_token_secret
+secrets:
+  gh_token:
+    file: ./ibn_token_secret
