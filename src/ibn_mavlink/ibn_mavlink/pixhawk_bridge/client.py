@@ -1,9 +1,10 @@
 """MAVLink client for Pixhawk communication."""
+
 import logging
 import threading
+from typing import Any, Dict
 
 from pymavlink import mavutil
-
 
 _logger = logging.getLogger("MAVLinkClient")
 _logger.setLevel(logging.INFO)
@@ -17,8 +18,9 @@ if not _logger.handlers:
 class MAVLinkClient:
     """Connects to Pixhawk and streams MAVLink messages."""
 
-    def __init__(self, connection_string: str, baud_rate: int, stream_rate_hz: int):
+    def __init__(self, connection_string: str, baud_rate: int, stream_rate_hz: int) -> None:
         """Initialize MAVLink connection."""
+
         self._master = mavutil.mavlink_connection(connection_string, baud=baud_rate)
 
         _logger.info("Waiting for heartbeat...")
@@ -32,18 +34,19 @@ class MAVLinkClient:
             self._master.target_component,
             mavutil.mavlink.MAV_DATA_STREAM_ALL,
             stream_rate_hz,
-            1
+            1,
         )
 
-        self._latest = {}
+        self._latest: Dict[str, Any] = {}
         self._lock = threading.Lock()
         self._running = True
 
         self._thread = threading.Thread(target=self._read_loop, daemon=True)
         self._thread.start()
 
-    def _read_loop(self):
+    def _read_loop(self) -> None:
         """Read messages in background thread."""
+
         while self._running:
             msg = self._master.recv_match(blocking=True, timeout=1)
             if msg is None:
@@ -54,12 +57,14 @@ class MAVLinkClient:
             with self._lock:
                 self._latest[msg_type] = msg
 
-    def get_latest(self, msg_type: str):
+    def get_latest(self, msg_type: str) -> Any:
         """Get latest message of given type."""
+
         with self._lock:
             return self._latest.get(msg_type)
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the client."""
+
         self._running = False
         self._thread.join(timeout=2)

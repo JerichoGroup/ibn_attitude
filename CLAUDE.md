@@ -12,11 +12,11 @@ ROS 2 package that connects to a Pixhawk running ArduCopter, reads telemetry via
 /home/user/clones/ibn_attitude/
 ├── docker/
 │   ├── Dockerfile              # PC (x86_64) build
-│   ├── Dockerfile.arm         # Jetson (ARM64) build
-│   └── entrypoint.sh        # Container startup script
+│   ├── Dockerfile.arm        # Jetson (ARM64) build
+│   └── entrypoint.sh         # Container startup script
 ├── docker-compose.yml
-├── github_token.txt         # GitHub token (create with your token)
-├── CLAUDE.md             # This file
+├── github_token.txt          # GitHub token (create with your token)
+├── CLAUDE.md              # This file
 ├── README.md
 ├── .gitignore
 │
@@ -26,25 +26,30 @@ ROS 2 package that connects to a Pixhawk running ArduCopter, reads telemetry via
 │
 └── src/
     └── ibn_mavlink/           # Main ROS 2 package
-        ├── ibn_mavlink/
-        │   ├── config/         # Config files (IN the package)
+        ├── setup.py
+        ├── package.xml
+        ├── resource/
+        │   └── ibn_mavlink   # Non-empty marker file
+        ├── setup.cfg
+        ├── launch/
+        │   ├── __init__.py
+        │   └── pixhawk_bridge.launch.py
+        ├── test/
+        ├── ibn_mavlink/      # Python package
+        │   ├── __init__.py
+        │   ├── config/       # Config files (INSIDE package)
         │   │   ├── pixhawk_bridge.yaml
         │   │   └── gps_injection.yaml
-        │   ├── launch/       # Launch files
-        │   │   └── pixhawk_bridge.launch.py
-        │   └── nodes/       # Node implementations
-        │       ├── pixhawk_bridge/
-        │       │   ├── node.py
-        │       │   ├── client.py
-        │       │   └── translator.py
-        │       └── gps_injection/
-        │           ├── node.py
-        │           ├── converter.py
-        │           └── sender.py
-        ├── resource/
-        │   └── ibn_mavlink
-        ├── package.xml
-        └── setup.py
+        │   ├── pixhawk_bridge/
+        │   │   ├── __init__.py
+        │   │   ├── node.py
+        │   │   ├── client.py
+        │   │   └── translator.py
+        │   └── gps_injection/
+        │       ├── __init__.py
+        │       ├── node.py
+        │       ├── converter.py
+        │       └── sender.py
 ```
 
 ---
@@ -54,8 +59,8 @@ ROS 2 package that connects to a Pixhawk running ArduCopter, reads telemetry via
 ### Inside Docker
 
 ```bash
-# Rebuild
-cd /root/dev/src && colcon build
+# Rebuild (always clean first)
+cd /root/dev/src && rm -rf build install log && colcon build
 
 # Source workspace
 source install/setup.bash
@@ -70,38 +75,70 @@ ros2 launch ibn_mavlink pixhawk_bridge.launch.py
 
 ---
 
-## Key Files
+## Setup.py Key Points
 
-### node.py config loading
-Uses `ament_index_python.get_package_share_directory()`:
 ```python
-from ament_index_python import get_package_share_directory
+from setuptools import setup, find_packages
 
-config_dir = get_package_share_directory('ibn_mavlink')
-config_path = Path(config_dir) / 'config' / 'pixhawk_bridge.yaml'
+package_name = 'ibn_mavlink'
+
+setup(
+    packages=find_packages(include=['ibn_mavlink', 'ibn_mavlink.*']),
+    zip_safe=False,                           # IMPORTANT: must be False
+    data_files=[
+        ('share/ament_index/resource_index/packages',
+            ['resource/' + package_name]),
+        ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/config',
+            ['ibn_mavlink/config/pixhawk_bridge.yaml',
+             'ibn_mavlink/config/gps_injection.yaml']),
+        ('share/' + package_name + '/launch',
+            ['launch/pixhawk_bridge.launch.py', 'launch/__init__.py']),
+    ],
+    entry_points={
+        'console_scripts': [
+            'gps_injection = ibn_mavlink.gps_injection.node:main',
+            'pixhawk_bridge = ibn_mavlink.pixhawk_bridge.node:main',
+        ],
+    },
+)
 ```
 
-### setup.py key points
-- `packages=find_packages(include=['ibn_mavlink', 'ibn_mavlink.*'])`
-- `zip_safe=False` (important for module discovery)
-- Config files in `data_files` under `share/ibn_mavlink/config/`
-- marker file at `resource/ibn_mavlink` (non-empty)
+Note: Launch files at `src/ibn_mavlink/launch/` must be listed in `data_files` to be installed to the share directory.
+
+---
+
+## Config Loading (node.py)
+
+Uses `ament_index_python.get_package_share_directory()` for proper ROS 2 install paths:
+
+```python
+from ament_index_python import get_package_share_directory
+from pathlib import Path
+
+def main(args=None):
+    config_dir = get_package_share_directory('ibn_mavlink')
+    config_path = Path(config_dir) / 'config' / 'pixhawk_bridge.yaml'
+    config = load_config(config_path)
+```
+
+---
+
+## Common Issues & Fixes
+
+| Issue | Fix |
+|-------|-----|
+| "No executable found" | Clean rebuild: `rm -rf build install log && colcon build` |
+| "ModuleNotFoundError" | Set `zip_safe=False` in setup.py |
+| "Config not found" | Use `get_package_share_directory()` |
+| Empty marker file | Ensure `resource/ibn_mavlink` has content (non-empty) |
+| "Launch file not found in share directory" | Add launch files to `data_files` in setup.py |
 
 ---
 
 ## Dependencies
 
-### package.xml
 - `rclpy`
-- `interfaces` (external ROS package)
+- `interfaces` (external ROS package - JerichoGroup)
 - `python3-yaml`
 - `python3-pymavlink`
-
----
-
-## Common Issues
-
-1. **"No executable found"** -> Rebuild with `colcon build`
-2. **"ModuleNotFoundError"** -> Set `zip_safe=False` in setup.py
-3. **"Config not found"** -> Use `get_package_share_directory()` for config paths
-4. **Empty marker file** -> Ensure `resource/ibn_mavlink` has content (e.g. "ibn_mavlink")

@@ -1,8 +1,10 @@
 """Translates MAVLink messages to ROS2 messages."""
+
+from typing import Any
+
+from interfaces.msg import Attitude, GlobalPositionInt
 from rclpy.node import Node
 from std_msgs.msg import Header
-
-from interfaces.msg import GlobalPositionInt, Attitude
 
 
 class MavlinkTranslator:
@@ -11,13 +13,15 @@ class MavlinkTranslator:
     @staticmethod
     def _header(node: Node) -> Header:
         """Create header with timestamp."""
+
         h = Header()
         h.stamp = node.get_clock().now().to_msg()
         return h
 
     @staticmethod
-    def to_global_position(node: Node, msg) -> GlobalPositionInt:
+    def to_global_position(node: Node, msg: Any) -> GlobalPositionInt:
         """Translate GLOBAL_POSITION_INT to ROS."""
+
         ros_msg = GlobalPositionInt()
         ros_msg.header = MavlinkTranslator._header(node)
 
@@ -35,8 +39,9 @@ class MavlinkTranslator:
         return ros_msg
 
     @staticmethod
-    def to_attitude(node: Node, msg) -> Attitude:
+    def to_attitude(node: Node, msg: Any) -> Attitude:
         """Translate ATTITUDE to ROS."""
+
         ros_msg = Attitude()
         ros_msg.header = MavlinkTranslator._header(node)
 

@@ -1,0 +1,78 @@
+exclude: ^docker/simulation_docker/cesium_exts_2023/
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-added-large-files
+        stages: [commit]
+      - id: check-merge-conflict
+        stages: [commit]
+      - id: end-of-file-fixer
+        stages: [commit]
+      - id: trailing-whitespace
+        stages: [commit]
+      - id: check-yaml
+        stages: [commit]
+      - id: check-json
+        stages: [commit]
+      - id: check-toml
+        stages: [commit]
+      - id: check-case-conflict
+        stages: [commit]
+      - id: check-docstring-first
+        stages: [commit]
+      - id: check-executables-have-shebangs
+        stages: [commit]
+      - id: check-shebang-scripts-are-executable
+        stages: [commit]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.2
+    hooks:
+      - id: ruff
+        stages: [commit]
+      - id: ruff-format
+        stages: [commit]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        stages: [commit]
+        args:
+          - --ignore-missing-imports
+          - --pretty
+
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1
+    hooks:
+      - id: gitlint
+        stages: [commit-msg]
+
+  - repo: local
+    hooks:
+      - id: require-docstring-private
+        name: Require docstring for private methods
+        language: python
+        entry: python3 g_tools/hooks/check_private_docstrings.py
+        stages: [commit]
+        files: \.py$
+        exclude: ^docker/simulation_docker/cesium_exts_2023/
+        pass_filenames: true
+      - id: enforce-blank-line-after-docstring
+        name: Enforce blank line after function docstring
+        language: python
+        entry: python3 g_tools/hooks/enforce_blank_line_after_docstring.py
+        pass_filenames: true
+        files: \.py$
+        exclude: ^docker/simulation_docker/cesium_exts_2023/
+        stages: [commit]
+      - id: enforce-section-headers
+        name: Enforce section headers formatting
+        language: python
+        entry: python3 g_tools/hooks/enforce_section_headers.py
+        pass_filenames: true
+        files: \.py$
+        exclude: ^docker/simulation_docker/cesium_exts_2023/
+        stages: [commit]

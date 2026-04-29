@@ -1,18 +1,18 @@
 """ROS2 node for Pixhawk telemetry bridge."""
+
 import logging
 from logging import StreamHandler
 from pathlib import Path
+from typing import Any, Dict
 
-import rclpy
-import yaml
 from ament_index_python import get_package_share_directory
+from interfaces.msg import Attitude, GlobalPositionInt
+import rclpy
 from rclpy.node import Node
-
-from interfaces.msg import GlobalPositionInt, Attitude
+import yaml
 
 from ibn_mavlink.pixhawk_bridge.client import MAVLinkClient
 from ibn_mavlink.pixhawk_bridge.translator import MavlinkTranslator
-
 
 _logger = logging.getLogger("PixhawkTelemetry")
 _logger.setLevel(logging.INFO)
@@ -25,51 +25,53 @@ if not _logger.handlers:
 
 def load_config(path: Path) -> dict:
     """Load config from YAML file."""
-    with open(path, "r") as f:
+
+    with path.open("r") as f:
         return yaml.safe_load(f)
 
 
 class PixhawkTelemetry(Node):
     """Bridge between Pixhawk MAVLink and ROS2."""
 
-    def __init__(self, config: dict):
+    def __init__(self, config: Dict[str, Any]) -> None:
         """Initialize node."""
+
         super().__init__("pixhawk_bridge_node")
 
-        mav = config["mavlink"]
-        ros = config["ros"]
+        mavlink_config = config["mavlink"]
+        ros_config = config["ros"]
 
-        self._pub_global = self.create_publisher(GlobalPositionInt, ros["global_position_topic"], 10)
-        self._pub_attitude = self.create_publisher(Attitude, ros["attitude_topic"], 10)
-        self._pub_init = self.create_publisher(GlobalPositionInt, ros["init_position_topic"], 10)
+        self._pub_global = self.create_publisher(GlobalPositionInt, ros_config["global_position_topic"], 10)
+        self._pub_attitude = self.create_publisher(Attitude, ros_config["attitude_topic"], 10)
+        self._pub_init = self.create_publisher(GlobalPositionInt, ros_config["init_position_topic"], 10)
 
         self._client = MAVLinkClient(
-            mav["connection_string"],
-            mav["baud_rate"],
-            mav["stream_rate_hz"]
+            mavlink_config["connection_string"], mavlink_config["baud_rate"], mavlink_config["stream_rate_hz"]
         )
 
         self._init_position = None
 
-        publish_hz = ros["publish_rate_hz"]
+        publish_hz = ros_config["publish_rate_hz"]
         self.create_timer(1.0 / publish_hz, self._tick)
 
-    def _tick(self):
+    def _tick(self) -> None:
         """Publish telemetry on timer."""
-        gp = self._client.get_latest("GLOBAL_POSITION_INT")
-        at = self._client.get_latest("ATTITUDE")
 
-        if gp:
-            self._handle_global_position(gp)
+        global_position_msg = self._client.get_latest("GLOBAL_POSITION_INT")
+        attitude_msg = self._client.get_latest("ATTITUDE")
 
-        if at:
-            ros_msg = MavlinkTranslator.to_attitude(self, at)
+        if global_position_msg:
+            self._handle_global_position(global_position_msg)
+
+        if attitude_msg:
+            ros_msg = MavlinkTranslator.to_attitude(self, attitude_msg)
             self._pub_attitude.publish(ros_msg)
 
         self._publish_init_position()
 
-    def _handle_global_position(self, msg):
+    def _handle_global_position(self, msg: Any) -> None:
         """Handle global position message."""
+
         ros_msg = MavlinkTranslator.to_global_position(self, msg)
 
         if self._init_position is None:
@@ -77,18 +79,20 @@ class PixhawkTelemetry(Node):
 
         self._pub_global.publish(ros_msg)
 
-    def _publish_init_position(self):
+    def _publish_init_position(self) -> None:
         """Publish initial position once."""
+
         if self._init_position:
             self._pub_init.publish(self._init_position)
 
 
-def main(args=None):
+def main() -> None:
     """Entry point."""
-    rclpy.init(args=args)
 
-    config_dir = get_package_share_directory('ibn_mavlink')
-    config_path = Path(config_dir) / 'config' / 'pixhawk_bridge.yaml'
+    rclpy.init(args=None)
+
+    config_dir = get_package_share_directory("ibn_mavlink")
+    config_path = Path(config_dir) / "config" / "pixhawk_bridge.yaml"
     config = load_config(config_path)
 
     node = PixhawkTelemetry(config)

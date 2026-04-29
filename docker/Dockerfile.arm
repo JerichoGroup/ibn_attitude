@@ -3,7 +3,7 @@ FROM --platform=linux/arm64/v8 ${BASE_IMAGE} AS build
 
 ENV DEBIAN_FRONTEND=noninteractive \
 	SHELL=/bin/bash
-SHELL ["/bin/bash", "-c"] 
+SHELL ["/bin/bash", "-c"]
 
 WORKDIR /tmp
 

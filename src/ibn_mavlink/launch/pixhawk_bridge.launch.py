@@ -1,10 +1,13 @@
 """Launch files for ibn_mavlink."""
-from launch import LaunchDescription
+
 from launch_ros.actions import Node
 
+from launch import LaunchDescription  # type: ignore[attr-defined]
 
-def generate_launch_description():
+
+def generate_launch_description() -> LaunchDescription:
     """Generate launch description."""
+
     pixhawk_node = Node(
         package="ibn_mavlink",
         executable="pixhawk_bridge",
@@ -19,7 +22,4 @@ def generate_launch_description():
         output="screen",
     )
 
-    return LaunchDescription([
-        pixhawk_node,
-        gps_node
-    ])
+    return LaunchDescription([pixhawk_node, gps_node])

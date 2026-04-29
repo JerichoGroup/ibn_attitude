@@ -1,6 +1,7 @@
 """Data models and converters for GPS injection."""
-import time
+
 from dataclasses import dataclass
+import time
 from typing import Dict, Optional, Tuple
 
 from your_msgs.msg import IbnResult
@@ -9,6 +10,7 @@ from your_msgs.msg import IbnResult
 @dataclass
 class GPSInputPayload:
     """GPS payload for injection."""
+
     lat: float
     lon: float
     alt: float
@@ -19,6 +21,7 @@ class GPSInputPayload:
 
     def to_json(self) -> Dict:
         """Convert to JSON-compatible dict."""
+
         return {
             "time_usec": int(time.time() * 1e6),
             "gps_id": 0,
@@ -41,21 +44,26 @@ class GPSInputPayload:
         }
 
 
+GPS_POSITION_LENGTH = 3
+
+
 class IbnToGPSConverter:
     """Converts IbnResult messages to GPSInputPayload."""
 
     @staticmethod
     def extract_position(msg: IbnResult) -> Optional[Tuple[float, float, float]]:
         """Extract position tuple from message."""
+
         if not msg.position_valid:
             return None
-        if len(msg.position) != 3:
+        if len(msg.position) != GPS_POSITION_LENGTH:
             return None
         return msg.position[0], msg.position[1], msg.position[2]
 
     @staticmethod
     def convert(msg: IbnResult) -> Optional[GPSInputPayload]:
         """Convert IbnResult to GPS payload."""
+
         pos = IbnToGPSConverter.extract_position(msg)
         if pos is None:
             return None
