@@ -14,11 +14,16 @@ ROS 2 package that connects to a Pixhawk running ArduCopter, reads telemetry via
 │   ├── Dockerfile              # PC (x86_64) build
 │   ├── Dockerfile.arm        # Jetson (ARM64) build
 │   └── entrypoint.sh         # Container startup script
-├── docker-compose.yml
-├── github_token.txt          # GitHub token (create with your token)
-├── CLAUDE.md              # This file
+├── docker-compose.yml         # PC (x86_64) compose
+├── docker-compose-arm.yml     # Jetson (ARM64) compose
+├── github_token.txt           # GitHub token (create with your token)
+├── CLAUDE.md                  # This file
 ├── README.md
 ├── .gitignore
+├── .gitlint                   # Git commit hooks
+├── .pre-commit-config.yaml    # Pre-commit hooks
+├── pyproject.toml             # Python project config (ruff, mypy)
+├── g_tools/                   # Git hooks
 │
 ├── docs/
 │   ├── system_diagram.puml
@@ -29,15 +34,15 @@ ROS 2 package that connects to a Pixhawk running ArduCopter, reads telemetry via
         ├── setup.py
         ├── package.xml
         ├── resource/
-        │   └── ibn_mavlink   # Non-empty marker file
+        │   └── ibn_mavlink    # Non-empty marker file
         ├── setup.cfg
         ├── launch/
         │   ├── __init__.py
         │   └── pixhawk_bridge.launch.py
         ├── test/
-        ├── ibn_mavlink/      # Python package
+        ├── ibn_mavlink/       # Python package
         │   ├── __init__.py
-        │   ├── config/       # Config files (INSIDE package)
+        │   ├── config/        # Config files (INSIDE package)
         │   │   ├── pixhawk_bridge.yaml
         │   │   └── gps_injection.yaml
         │   ├── pixhawk_bridge/
