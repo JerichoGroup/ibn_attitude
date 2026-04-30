@@ -1,5 +1,5 @@
 mavlink:
-  connection_string: "/dev/ttyACM0"
+  connection_string: "127.0.0.1:14551"
   baud_rate: 115200
   stream_rate_hz: 50
 

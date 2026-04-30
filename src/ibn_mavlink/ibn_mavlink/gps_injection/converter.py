@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import time
 from typing import Dict, Optional, Tuple
 
-from your_msgs.msg import IbnResult
+from interfaces.msg import IBNResult
 
 
 @dataclass
@@ -47,11 +47,11 @@ class GPSInputPayload:
 GPS_POSITION_LENGTH = 3
 
 
-class IbnToGPSConverter:
-    """Converts IbnResult messages to GPSInputPayload."""
+class IBNToGPSConverter:
+    """Converts IBNResult messages to GPSInputPayload."""
 
     @staticmethod
-    def extract_position(msg: IbnResult) -> Optional[Tuple[float, float, float]]:
+    def extract_position(msg: IBNResult) -> Optional[Tuple[float, float, float]]:
         """Extract position tuple from message."""
 
         if not msg.position_valid:
@@ -61,10 +61,10 @@ class IbnToGPSConverter:
         return msg.position[0], msg.position[1], msg.position[2]
 
     @staticmethod
-    def convert(msg: IbnResult) -> Optional[GPSInputPayload]:
-        """Convert IbnResult to GPS payload."""
+    def convert(msg: IBNResult) -> Optional[GPSInputPayload]:
+        """Convert IBNResult to GPS payload."""
 
-        pos = IbnToGPSConverter.extract_position(msg)
+        pos = IBNToGPSConverter.extract_position(msg)
         if pos is None:
             return None
 

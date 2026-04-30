@@ -11,7 +11,7 @@ import rclpy
 from rclpy.node import Node
 import yaml
 
-from ibn_mavlink.pixhawk_bridge.client import MAVLinkClient
+from ibn_mavlink.mavlink.client import MAVLinkClient
 from ibn_mavlink.pixhawk_bridge.translator import MavlinkTranslator
 
 _logger = logging.getLogger("PixhawkTelemetry")

@@ -1,4 +1,4 @@
-"""ROS2 node for GPS injection."""
+"""ROS2 node for GPS injection back to Pixhawk."""
 
 import logging
 from logging import StreamHandler
@@ -11,8 +11,8 @@ import rclpy
 from rclpy.node import Node
 import yaml
 
-from ibn_mavlink.gps_injection.converter import IbnToGPSConverter
-from ibn_mavlink.gps_injection.sender import GPSLogger
+from ibn_mavlink.gps_injection.converter import GPSInputPayload, IBNToGPSConverter
+from ibn_mavlink.mavlink.client import GPSInputParams, MAVLinkClient
 
 _logger = logging.getLogger("GPSInjection")
 _logger.setLevel(logging.INFO)
@@ -31,17 +31,23 @@ def load_config(path: Path) -> dict:
 
 
 class GPSInjectionNode(Node):
-    """Logs GPS position from IBN result."""
+    """Injects computed GPS position back to Pixhawk."""
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """Initialize node."""
 
         super().__init__("gps_injection_node")
 
+        mavlink_config = config["mavlink"]
         ros = config["ros"]
-        log = config["log"]
 
-        self._logger = GPSLogger(log["file_path"])
+        self._client = MAVLinkClient(
+            mavlink_config["connection_string"],
+            mavlink_config["baud_rate"],
+            mavlink_config["stream_rate_hz"],
+            read_enabled=False,
+        )
+
         self._subscription = self.create_subscription(
             IBNResult,
             ros["ibn_result_topic"],
@@ -49,20 +55,55 @@ class GPSInjectionNode(Node):
             10,
         )
 
+        self._inject_rate_hz = ros.get("inject_rate_hz", 10)
+        self._inject_timer = self.create_timer(1.0 / self._inject_rate_hz, self._inject_loop)
+
+        self._latest_payload: Optional[GPSInputPayload] = None
+
         _logger.info("GPS Injection Node initialized")
+        _logger.info(f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud")
 
     def _callback(self, msg: IBNResult) -> None:
-        """Handle incoming IbnResult."""
+        """Store latest IBNResult for injection."""
 
-        gps_payload = IbnToGPSConverter.convert(msg)
+        gps_payload = IBNToGPSConverter.convert(msg)
 
         if gps_payload is None:
             self.get_logger().warn("Invalid position, skipping")
             return
 
-        self._logger.log(gps_payload.to_json())
+        self._latest_payload = gps_payload
 
-        _logger.info(f"Logged GPS lat={gps_payload.lat:.7f}, " f"lon={gps_payload.lon:.7f}, alt={gps_payload.alt:.2f}")
+        _logger.info(f"Received GPS lat={gps_payload.lat:.7f}, lon={gps_payload.lon:.7f}, alt={gps_payload.alt:.2f}")
+
+    def _inject_loop(self) -> None:
+        """Send GPS to Pixhawk on timer."""
+
+        if self._latest_payload is None:
+            return
+
+        payload = self._latest_payload
+
+        try:
+            params = GPSInputParams(
+                lat=payload.lat,
+                lon=payload.lon,
+                alt=payload.alt,
+                vn=0.0,
+                ve=0.0,
+                vd=0.0,
+                satellites=payload.satellites_visible,
+                hdop=payload.horiz_accuracy,
+            )
+            self._client.send_gps_input(params)
+        except Exception as e:
+            _logger.error(f"Failed to inject GPS: {e}")
+
+    def destroy_node(self) -> None:
+        """Cleanup."""
+
+        self._client.stop()
+        super().destroy_node()
 
 
 def main(args: Optional[list] = None) -> None:
@@ -75,9 +116,11 @@ def main(args: Optional[list] = None) -> None:
     config = load_config(config_path)
 
     node = GPSInjectionNode(config)
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":
