@@ -1,0 +1,10 @@
+mavlink:
+  connection_string: "/dev/ttyACM0"
+  baud_rate: 115200
+  stream_rate_hz: 50
+
+ros:
+  global_position_topic: "/pixhawk/global_position"
+  attitude_topic: "/pixhawk/attitude"
+  init_position_topic: "/pixhawk/init_position"
+  publish_rate_hz: 10

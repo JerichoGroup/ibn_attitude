@@ -17,7 +17,7 @@ setup(
         ),
         (
             "share/" + package_name + "/launch",
-            ["launch/pixhawk_bridge.launch.py", "launch/__init__.py"],
+            ["launch/pixhawk_bridge_launch.py", "launch/__init__.py"],
         ),
     ],
     install_requires=["setuptools"],

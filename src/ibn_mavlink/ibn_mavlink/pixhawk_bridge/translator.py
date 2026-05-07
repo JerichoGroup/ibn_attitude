@@ -1,10 +1,38 @@
 """Translates MAVLink messages to ROS2 messages."""
 
-from typing import Any
+from __future__ import annotations
+
+from typing import Protocol
 
 from interfaces.msg import Attitude, GlobalPositionInt
 from rclpy.node import Node
 from std_msgs.msg import Header
+
+
+class GlobalPositionMessage(Protocol):
+    """Protocol for GLOBAL_POSITION_INT MAVLink message."""
+
+    time_boot_ms: int
+    lat: int
+    lon: int
+    alt: int
+    relative_alt: int
+    vx: float
+    vy: float
+    vz: float
+    hdg: float
+
+
+class AttitudeMessage(Protocol):
+    """Protocol for ATTITUDE MAVLink message."""
+
+    time_boot_ms: int
+    roll: float
+    pitch: float
+    yaw: float
+    rollspeed: float
+    pitchspeed: float
+    yawspeed: float
 
 
 class MavlinkTranslator:
@@ -19,7 +47,7 @@ class MavlinkTranslator:
         return h
 
     @staticmethod
-    def to_global_position(node: Node, msg: Any) -> GlobalPositionInt:
+    def to_global_position(node: Node, msg: GlobalPositionMessage) -> GlobalPositionInt:
         """Translate GLOBAL_POSITION_INT to ROS."""
 
         ros_msg = GlobalPositionInt()
@@ -39,7 +67,7 @@ class MavlinkTranslator:
         return ros_msg
 
     @staticmethod
-    def to_attitude(node: Node, msg: Any) -> Attitude:
+    def to_attitude(node: Node, msg: AttitudeMessage) -> Attitude:
         """Translate ATTITUDE to ROS."""
 
         ros_msg = Attitude()

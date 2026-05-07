@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    image: pixhawk_bridge:ibn
+    image: ibn_pixhawk_bridge:latest
     container_name: pixhawk_bridge
     # volumes:
       # - ./src:/root/dev/src
@@ -22,3 +22,19 @@ services:
     # command: "ros2 run ibn_mavlink pixhawk_bridge"
     # command: "ros2 run ibn_mavlink gps_injection"
     # command: "bash"
+
+  mavproxy:
+    image: sitin/mavproxy:latest
+    container_name: ibn_mavproxy
+    network_mode: host
+    privileged: true
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    volumes:
+      - /dev/:/dev/
+    command: >
+      --master=/dev/ttyACM0
+      --baudrate=115200
+      --out=udp:127.0.0.1:14550
+      --out=udp:127.0.0.1:14551

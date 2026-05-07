@@ -1,5 +1,7 @@
 """ROS2 node for Pixhawk telemetry bridge."""
 
+from __future__ import annotations
+
 import logging
 from logging import StreamHandler
 from pathlib import Path
@@ -9,10 +11,10 @@ from ament_index_python import get_package_share_directory
 from interfaces.msg import Attitude, GlobalPositionInt
 import rclpy
 from rclpy.node import Node
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from ibn_mavlink.mavlink.client import MAVLinkClient
-from ibn_mavlink.pixhawk_bridge.translator import MavlinkTranslator
+from ibn_mavlink.pixhawk_bridge.translator import GlobalPositionMessage, MavlinkTranslator
 
 _logger = logging.getLogger("PixhawkTelemetry")
 _logger.setLevel(logging.INFO)
@@ -61,15 +63,15 @@ class PixhawkTelemetry(Node):
         attitude_msg = self._client.get_latest("ATTITUDE")
 
         if global_position_msg:
-            self._handle_global_position(global_position_msg)
+            self._handle_global_position(global_position_msg)  # type: ignore[arg-type]
 
         if attitude_msg:
-            ros_msg = MavlinkTranslator.to_attitude(self, attitude_msg)
+            ros_msg = MavlinkTranslator.to_attitude(self, attitude_msg)  # type: ignore[arg-type]
             self._pub_attitude.publish(ros_msg)
 
         self._publish_init_position()
 
-    def _handle_global_position(self, msg: Any) -> None:
+    def _handle_global_position(self, msg: GlobalPositionMessage) -> None:
         """Handle global position message."""
 
         ros_msg = MavlinkTranslator.to_global_position(self, msg)

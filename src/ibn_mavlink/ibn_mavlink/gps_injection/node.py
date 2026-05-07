@@ -9,7 +9,7 @@ from ament_index_python import get_package_share_directory
 from interfaces.msg import IBNResult
 import rclpy
 from rclpy.node import Node
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from ibn_mavlink.gps_injection.converter import GPSInputPayload, IBNToGPSConverter
 from ibn_mavlink.mavlink.client import GPSInputParams, MAVLinkClient

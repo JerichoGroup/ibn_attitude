@@ -1,0 +1,5 @@
+mavlink:
+  connection_string: "/dev/ttyACM0"
+
+ros:
+  global_position_topic: "/pixhawk/global_position"

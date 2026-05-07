@@ -76,24 +76,8 @@ property-decorators = []
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-sort-within-sections = true
-from-first = true
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["D104", "D100"]
-"src/ibn_mavlink/launch/pixhawk_bridge.launch.py" = ["N999"]
-"src/ibn_mavlink/ibn_mavlink/pixhawk_bridge/translator.py" = ["ANN401"]
-"src/ibn_mavlink/ibn_mavlink/pixhawk_bridge/client.py" = ["ANN401"]
-"src/ibn_mavlink/ibn_mavlink/pixhawk_bridge/node.py" = ["ANN401"]
-
-[tool.mypy]
-python_version = "3.10"
-ignore_missing_imports = true
-allow_redefinition = true
-
-[[tool.mypy.overrides]]
-module = "launch.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "yaml"
-ignore_missing_imports = true
+"test/*" = ["ALL"]
+"conftest.py" = ["ALL"]

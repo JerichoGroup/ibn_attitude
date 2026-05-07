@@ -191,3 +191,34 @@ Update configs to use UDP:
 - `interfaces` (external ROS package - JerichoGroup)
 - `python3-yaml`
 - `python3-pymavlink`
+
+---
+
+## Testing
+
+Tests use pytest and are located in `src/ibn_mavlink/test/`.
+
+### Run Tests
+
+```bash
+cd /root/dev/src
+python3 -m pytest src/ibn_mavlink/test/ -v
+```
+
+### Test Modules
+
+| Module | File | Priority |
+|--------|------|----------|
+| MAVLink Client | `ibn_mavlink/mavlink/client.py` | High |
+| GPS Converter | `ibn_mavlink/gps_injection/converter.py` | High |
+| Mavlink Translator | `ibn_mavlink/pixhawk_bridge/translator.py` | High |
+| Nodes | `ibn_mavlink/*/node.py` | Medium |
+
+### Key Edge Cases
+- Coordinate conversion (negative lat/lon, extreme values)
+- Empty messages from MAVLink
+- Invalid IBNResult handling
+- Thread safety in MAVLinkClient
+- Config file errors
+
+See `docs/test_plan.md` for detailed test plan.

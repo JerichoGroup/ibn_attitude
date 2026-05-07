@@ -190,3 +190,33 @@ ros2 launch ibn_attitude pixhawk_bridge.launch.py
 ## External Packages
 
 This package depends on the [interfaces](https://github.com/JerichoGroup/interfaces) package for custom message definitions.
+
+---
+
+## Testing
+
+Tests are located in `src/ibn_mavlink/test/` and use pytest.
+
+### Running Tests
+
+```bash
+# Inside container
+cd /root/dev/src
+python3 -m pytest src/ibn_mavlink/test/ -v
+
+# Or via colcon
+colcon test --packages-select ibn_mavlink
+```
+
+### Test Structure
+
+- `test_client.py` - MAVLinkClient unit tests
+- `test_converter.py` - IBNToGPSConverter tests
+- `test_translator.py` - MavlinkTranslator tests
+- `test_gps_injection_node.py` - GPS injection node integration tests
+- `test_pixhawk_bridge_node.py` - Pixhawk bridge node integration tests
+- `conftest.py` - Shared fixtures and mocks
+
+### Test Plan
+
+See [docs/test_plan.md](docs/test_plan.md) for detailed test cases and edge cases.
