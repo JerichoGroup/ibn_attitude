@@ -3,38 +3,48 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    image: ibn_pixhawk_bridge:latest
+      secrets:
+        - gh_token
+
+    image: pixhawk_bridge:ibn
     container_name: pixhawk_bridge
-    # volumes:
-      # - ./src:/root/dev/src
+
     devices:
       - /dev/ttyACM0:/dev/ttyACM0
       - /dev/ttyACM1:/dev/ttyACM1
+
     environment:
       - DISPLAY=${DISPLAY}
       - QT_X11_NO_MITSHM=1
+
     stdin_open: true
     tty: true
     network_mode: host
     privileged: true
     restart: unless-stopped
-    command: "ros2 launch ibn_mavlink pixhawk_bridge.launch.py"
+    command: "ros2 launch ibn_mavlink pixhawk_bridge_launch.py"
     # command: "ros2 run ibn_mavlink pixhawk_bridge"
     # command: "ros2 run ibn_mavlink gps_injection"
-    # command: "bash"
 
   mavproxy:
     image: sitin/mavproxy:latest
     container_name: ibn_mavproxy
+
     network_mode: host
     privileged: true
     stdin_open: true
     tty: true
     restart: unless-stopped
+
     volumes:
-      - /dev/:/dev/
+      - /dev:/dev
+
     command: >
       --master=/dev/ttyACM0
       --baudrate=115200
       --out=udp:127.0.0.1:14550
       --out=udp:127.0.0.1:14551
+
+secrets:
+  gh_token:
+    file: ./github_token.txt
