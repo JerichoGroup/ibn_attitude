@@ -32,10 +32,15 @@ class GPSInputParams:
 
 
 class MAVLinkClient:
-    """Connects to Pixhawk and streams MAVLink messages."""
+    """
+    Connects to Pixhawk and streams MAVLink messages.
+    Stores only the latest message of each type.
+    """
 
     def __init__(self, conn_str: str, baud: int, rate: int = 0, read_enabled: bool = True) -> None:
-        """Initialize MAVLink connection."""
+        """
+        Initialize MAVLink connection. 
+        """
 
         self._init_connection(conn_str, baud, rate, read_enabled)
 
@@ -76,6 +81,7 @@ class MAVLinkClient:
             self._thread = threading.Thread(target=self._read_loop, daemon=True)
             self._thread.start()
 
+
     def _read_loop(self) -> None:
         """Read messages in background thread."""
 
@@ -89,11 +95,13 @@ class MAVLinkClient:
             with self._lock:
                 self._latest[msg_type] = msg
 
+
     def get_latest(self, msg_type: str) -> Optional[object]:
         """Get latest message of given type."""
 
         with self._lock:
             return self._latest.get(msg_type)
+
 
     def stop(self) -> None:
         """Stop the client."""
@@ -101,6 +109,7 @@ class MAVLinkClient:
         self._running = False
         if hasattr(self, "_thread"):
             self._thread.join(timeout=2)
+
 
     def send_gps_input(self, params: GPSInputParams) -> None:
         """Send GPS_INPUT message to Pixhawk."""

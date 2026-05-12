@@ -48,13 +48,16 @@ class PixhawkTelemetry(Node):
         self._pub_init = self.create_publisher(GlobalPositionInt, ros_config["init_position_topic"], 10)
 
         self._client = MAVLinkClient(
-            mavlink_config["connection_string"], mavlink_config["baud_rate"], mavlink_config["stream_rate_hz"]
+            mavlink_config["connection_string"],
+            mavlink_config["baud_rate"],
+            mavlink_config["stream_rate_hz"]
         )
 
         self._init_position = None
 
         publish_hz = ros_config["publish_rate_hz"]
         self.create_timer(1.0 / publish_hz, self._tick)
+
 
     def _tick(self) -> None:
         """Publish telemetry on timer."""
@@ -71,6 +74,7 @@ class PixhawkTelemetry(Node):
 
         self._publish_init_position()
 
+
     def _handle_global_position(self, msg: GlobalPositionMessage) -> None:
         """Handle global position message."""
 
@@ -80,6 +84,7 @@ class PixhawkTelemetry(Node):
             self._init_position = ros_msg
 
         self._pub_global.publish(ros_msg)
+
 
     def _publish_init_position(self) -> None:
         """Publish initial position once."""

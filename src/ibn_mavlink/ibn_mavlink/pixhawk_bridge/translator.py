@@ -46,6 +46,7 @@ class MavlinkTranslator:
         h.stamp = node.get_clock().now().to_msg()
         return h
 
+
     @staticmethod
     def to_global_position(node: Node, msg: GlobalPositionMessage) -> GlobalPositionInt:
         """Translate GLOBAL_POSITION_INT to ROS."""
@@ -65,6 +66,7 @@ class MavlinkTranslator:
         ros_msg.vehicle_heading_angle = int(msg.hdg)
 
         return ros_msg
+
 
     @staticmethod
     def to_attitude(node: Node, msg: AttitudeMessage) -> Attitude:
