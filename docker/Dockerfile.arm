@@ -45,17 +45,20 @@ RUN python3 -m pip install --no-cache-dir \
 
 WORKDIR /root/dev
 
-ARG INTERFACES_TAG="v0.5.0"
-ARG ATTITUDE_TAG="dev"
+ARG ATTITUDE_TAG=fixsing_ros_pkg
+ARG INTERFACES_TAG=v0.5.0
 
-# Clone needed repos using the secret GITHUB_TOKEN
-RUN --mount=type=secret,id=gh_token \
-    GITHUB_TOKEN=$(cat /run/secrets/gh_token) && \
-    mkdir src && \
-	git clone --branch=${ATTITUDE_TAG} --depth 1 https://$GITHUB_TOKEN:x-oauth-basic@github.com/JerichoGroup/ibn_attitude.git src/ibn_attitude && \
-	git clone --branch=${INTERFACES_TAG} --depth 1 https://$GITHUB_TOKEN:x-oauth-basic@github.com/JerichoGroup/interfaces.git src/interfaces
+COPY github_token.txt /tmp/github_token.txt
 
-# Build ROS2 workspace
+RUN GITHUB_TOKEN=$(cat /tmp/github_token.txt) && \
+    mkdir -p src && \
+    git clone --branch=${ATTITUDE_TAG} --depth 1 \
+      https://${GITHUB_TOKEN}:x-oauth-basic@github.com/JerichoGroup/ibn_attitude.git src/ibn_attitude && \
+    git clone --branch=${INTERFACES_TAG} --depth 1 \
+      https://${GITHUB_TOKEN}:x-oauth-basic@github.com/JerichoGroup/interfaces.git src/interfaces && \
+    rm -f /tmp/github_token.txt
+	
+# Build ROS2 workspacea
 RUN . /opt/ros/${ROS_DISTRO}/install/setup.sh && \
 	colcon build --symlink-install --cmake-args "-DBUILD_TESTING=OFF"
 

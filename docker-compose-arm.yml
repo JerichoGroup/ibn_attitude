@@ -3,9 +3,6 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.arm
-      secrets:
-        - gh_token
-
     image: pixhawk_bridge:arm
     container_name: pixhawk_bridge_arm
 
@@ -38,8 +35,3 @@ services:
       --baudrate=115200
       --out=udp:127.0.0.1:14550
       --out=udp:127.0.0.1:14551
-
-
-secrets:
-  gh_token:
-    file: ./github_token.txt
