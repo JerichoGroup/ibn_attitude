@@ -1,7 +1,5 @@
 """ROS2 node for Pixhawk telemetry bridge."""
 
-from __future__ import annotations
-
 import logging
 from logging import StreamHandler
 from pathlib import Path

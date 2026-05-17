@@ -2,7 +2,10 @@ ARG BASE_IMAGE=dustynv/ros:galactic-ros-base-l4t-r32.4.4
 FROM --platform=linux/arm64/v8 ${BASE_IMAGE} AS build
 
 ENV DEBIAN_FRONTEND=noninteractive \
-	SHELL=/bin/bash
+    SHELL=/bin/bash \
+    ROS_DISTRO=galactic \
+    LANG=en_US.UTF-8
+
 SHELL ["/bin/bash", "-c"]
 
 WORKDIR /tmp
@@ -10,33 +13,38 @@ WORKDIR /tmp
 # Locale
 RUN locale-gen en_US en_US.UTF-8 && \
 	update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+	
 ENV LANG=en_US.UTF-8
 
-# Clean ROS2 apt sources (these are expired onces that prevents apt-get update from working))
+# Clean broken ROS apt sources
 RUN rm -f /etc/apt/sources.list.d/ros2* && \
-	rm -f /etc/apt/sources.list.d/ros-latest.list
+    rm -f /etc/apt/sources.list.d/ros-latest.list
 
-# Install dependencies/tools
+# Dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-		build-essential \
-		cmake \
-		git \
-		python3-pip \
-		python3-cffi \
-		python3-setuptools \
-		python3-wheel \
-		python3-dev \
-		pkg-config \
-		vim tmux gdb \
-		iputils-ping \
+        build-essential \
+        cmake \
+        git \
+        python3-pip \
+        python3-cffi \
+        python3-setuptools \
+        python3-wheel \
+        python3-dev \
+        pkg-config \
+        nano \
+        vim \
+        tmux \
+        gdb \
+        iputils-ping \
     && rm -rf /var/lib/apt/lists/*
 
-# Make python3 the default python
+# Python alias
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 
-# Install Python packages
+# Python packages
 RUN python3 -m pip install --no-cache-dir \
+    dataclasses \
     "Cython<3.0" \
     pyserial \
     toml \
@@ -45,7 +53,7 @@ RUN python3 -m pip install --no-cache-dir \
 
 WORKDIR /root/dev
 
-ARG ATTITUDE_TAG=fixsing_ros_pkg
+ARG ATTITUDE_TAG=fixing_ros_pkg
 ARG INTERFACES_TAG=v0.5.0
 
 COPY github_token.txt /tmp/github_token.txt
@@ -57,23 +65,33 @@ RUN GITHUB_TOKEN=$(cat /tmp/github_token.txt) && \
     git clone --branch=${INTERFACES_TAG} --depth 1 \
       https://${GITHUB_TOKEN}:x-oauth-basic@github.com/JerichoGroup/interfaces.git src/interfaces && \
     rm -f /tmp/github_token.txt
-	
-# Build ROS2 workspacea
-RUN . /opt/ros/${ROS_DISTRO}/install/setup.sh && \
-	colcon build --symlink-install --cmake-args "-DBUILD_TESTING=OFF"
 
+WORKDIR /root/dev/src
 
-# ==================== RUNTIME IMAGE ====================
+# Build workspace
+RUN source /opt/ros/${ROS_DISTRO}/install/setup.bash && \
+    colcon build \
+      --symlink-install \
+      --cmake-args "-DBUILD_TESTING=OFF"
+
+# ==================== RUNTIME ====================
+
 FROM nvcr.io/nvidia/l4t-base:r32.4.4
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    SHELL=/bin/bash \
+    ROS_DISTRO=galactic \
+    LANG=en_US.UTF-8
+
+SHELL ["/bin/bash", "-c"]
 
 COPY --from=build / /
 
-ENV DEBIAN_FRONTEND=noninteractive \
-	SHELL=/bin/bash \
-	ROS_DISTRO=galactic \
-	ROS_ROOT=/opt/ros/galactic
+WORKDIR /root/dev/src
 
-WORKDIR /root/dev/
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-ENTRYPOINT ["/bin/bash", "-i"]
+ENTRYPOINT ["/entrypoint.sh"]
+
 CMD ["bash"]

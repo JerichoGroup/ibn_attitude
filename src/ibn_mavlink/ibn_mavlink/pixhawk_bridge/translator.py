@@ -1,7 +1,5 @@
 """Translates MAVLink messages to ROS2 messages."""
 
-from __future__ import annotations
-
 from typing import Protocol
 
 from interfaces.msg import Attitude, GlobalPositionInt
