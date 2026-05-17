@@ -2,8 +2,15 @@
 set -e
 
 source /opt/ros/galactic/install/setup.bash
-source /root/dev/src/install/setup.bash
 
-echo "[entrypoint] ROS environment ready"
+cd /root/dev/src
+
+echo "[entrypoint] building workspace..."
+
+rm -rf build install log
+
+colcon build
+
+source install/setup.bash
 
 exec "$@"

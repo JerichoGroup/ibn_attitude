@@ -5,9 +5,16 @@ services:
       dockerfile: docker/Dockerfile.arm
     image: pixhawk_bridge:arm
     container_name: pixhawk_bridge_arm
-
+    
+    depends_on:
+      - mavproxy
+      
     network_mode: host
     privileged: true
+
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
+      - /dev/ttyACM1:/dev/ttyACM1
 
     environment:
       - DISPLAY=${DISPLAY}
@@ -24,11 +31,12 @@ services:
 
     network_mode: host
     privileged: true
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
 
     volumes:
       - /dev:/dev
-
-    restart: unless-stopped
 
     command: >
       --master=/dev/ttyACM0

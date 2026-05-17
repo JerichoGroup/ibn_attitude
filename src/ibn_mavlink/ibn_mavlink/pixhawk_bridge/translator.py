@@ -1,6 +1,6 @@
 """Translates MAVLink messages to ROS2 messages."""
 
-from typing import Protocol
+from typing_extensions import Protocol
 
 from interfaces.msg import Attitude, GlobalPositionInt
 from rclpy.node import Node
