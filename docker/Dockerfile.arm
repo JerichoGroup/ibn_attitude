@@ -68,7 +68,7 @@ RUN GITHUB_TOKEN=$(cat /tmp/github_token.txt) && \
 
 WORKDIR /root/dev
 
-RUN source /opt/ros/${ROS_DISTRO}/setup.bash && \
+RUN source /opt/ros/${ROS_DISTRO}/install/setup.bash && \
     rosdep update && \
     rosdep install --from-paths src --ignore-src -r -y
 		
