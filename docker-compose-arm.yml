@@ -23,7 +23,7 @@ services:
     stdin_open: true
     tty: true
     restart: unless-stopped
-    command: "ros2 launch ibn_mavlink pixhawk_bridge_launch.py"
+    command: bash -c "./entrypoint_arm.sh && source /opt/ros/galactic/install/setup.bash && source /root/dev/src/install/setup.bash && ros2 launch ibn_mavlink pixhawk_bridge_launch.py"
 
   mavproxy:
     image: sitin/mavproxy:latest
