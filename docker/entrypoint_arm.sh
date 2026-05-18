@@ -1,24 +1,16 @@
 #!/bin/bash
 set -e
 
-echo "[entrypoint] sourcing ROS..."
+echo "[startup] sourcing ROS..."
 
 source /opt/ros/galactic/install/setup.bash
 
-cd /root/dev/src
+echo "[startup] sourcing workspace..."
 
-echo "[entrypoint] cleaning workspace..."
+source /root/dev/install/setup.bash
 
-rm -rf build install log
+echo "[startup] launching..."
 
-echo "[entrypoint] building workspace..."
+exec ros2 launch ibn_mavlink pixhawk_bridge_launch.py
 
-colcon build
-
-echo "[entrypoint] sourcing workspace..."
-
-source /root/dev/src/install/setup.bash
-
-echo "[entrypoint] starting command..."
-
-exec "$@"
+echo "[startup] done."

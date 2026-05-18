@@ -68,10 +68,16 @@ RUN GITHUB_TOKEN=$(cat /tmp/github_token.txt) && \
 
 WORKDIR /root/dev
 
+# Install ROS deps
 RUN source /opt/ros/${ROS_DISTRO}/install/setup.bash && \
     rosdep update && \
     rosdep install --from-paths src --ignore-src -r -y
-		
+
+# Build workspace
+RUN source /opt/ros/${ROS_DISTRO}/install/setup.bash && \
+    cd /root/dev && \
+    colcon build
+
 # ==================== RUNTIME ====================
 
 FROM nvcr.io/nvidia/l4t-base:r32.4.4
@@ -85,11 +91,9 @@ SHELL ["/bin/bash", "-c"]
 
 COPY --from=build / /
 
-WORKDIR /root/dev/src
+WORKDIR /root/dev/
 
 COPY docker/entrypoint_arm.sh /entrypoint_arm.sh
 RUN chmod +x /entrypoint_arm.sh
-
-ENTRYPOINT ["/entrypoint_arm.sh"]
 
 CMD ["bash"]
