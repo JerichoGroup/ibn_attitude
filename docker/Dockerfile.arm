@@ -68,9 +68,10 @@ RUN GITHUB_TOKEN=$(cat /tmp/github_token.txt) && \
 
 WORKDIR /root/dev
 
-RUN rosdep update && \
+RUN source /opt/ros/${ROS_DISTRO}/install/setup.bash && \
+    rosdep update && \
     rosdep install --from-paths src --ignore-src -r -y
-			
+		
 # ==================== RUNTIME ====================
 
 FROM nvcr.io/nvidia/l4t-base:r32.4.4
