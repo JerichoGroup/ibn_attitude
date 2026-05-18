@@ -66,12 +66,12 @@ RUN GITHUB_TOKEN=$(cat /tmp/github_token.txt) && \
       https://${GITHUB_TOKEN}:x-oauth-basic@github.com/JerichoGroup/interfaces.git src/interfaces && \
     rm -f /tmp/github_token.txt
 
-WORKDIR /root/dev/src
+WORKDIR /root/dev
 
-# Build workspace
-RUN source /opt/ros/${ROS_DISTRO}/install/setup.bash && \
-	rosdep install --from-paths src --ignore-src -r -y
-	
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash && \
+    rosdep update && \
+    rosdep install --from-paths src --ignore-src -r -y
+		
 # ==================== RUNTIME ====================
 
 FROM nvcr.io/nvidia/l4t-base:r32.4.4
