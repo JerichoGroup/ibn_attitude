@@ -116,30 +116,28 @@ class MAVLinkClient:
 
         lat_int = int(params.lat * 1e7)
         lon_int = int(params.lon * 1e7)
-        alt_cm = int(params.alt * 100)
-        vn_cm = int(params.vn * 100)
-        ve_cm = int(params.ve * 100)
-        vd_cm = int(params.vd * 100)
-
-        horiz_accuracy = int(params.hdop * 100)
-        vert_accuracy = int(params.hdop * 150)
 
         time_us = int(time.time() * 1e6)
 
         self._master.mav.gps_input_send(
             time_us,
-            0,
+            0,                      # gps_id
+            0,                      # ignore_flags
+            0,                      # time_week_ms
+            0,                      # time_week
+            3,                      # fix_type (3D)
             lat_int,
             lon_int,
-            alt_cm,
-            vn_cm,
-            ve_cm,
-            vd_cm,
-            horiz_accuracy,
-            vert_accuracy,
+            params.alt,             # meters
+            params.hdop,            # hdop
+            params.hdop,            # vdop
+            params.vn,              # m/s
+            params.ve,
+            params.vd,
+            0.1,                    # speed_accuracy
+            params.hdop,            # horiz_accuracy
+            params.hdop,            # vert_accuracy
             params.satellites,
-            0,
-            0,
-            0,
-            0,
+            0,                      # yaw unavailable
         )
+    
