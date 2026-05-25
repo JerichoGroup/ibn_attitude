@@ -53,7 +53,7 @@ RUN python3 -m pip install --no-cache-dir \
 
 WORKDIR /root/dev
 
-ARG ATTITUDE_TAG=fixing_ros_pkg
+ARG ATTITUDE_TAG=fixing_gps_node
 ARG INTERFACES_TAG=v0.5.0
 
 COPY github_token.txt /tmp/github_token.txt
