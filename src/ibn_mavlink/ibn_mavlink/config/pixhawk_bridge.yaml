@@ -8,3 +8,6 @@ ros:
   global_position_topic: "/pixhawk/global_position"
   attitude_topic: "/pixhawk/attitude"
   init_position_topic: "/IBN/init_pos"
+
+log:
+  file_path: "/logs/pixhawk_bridge.log"

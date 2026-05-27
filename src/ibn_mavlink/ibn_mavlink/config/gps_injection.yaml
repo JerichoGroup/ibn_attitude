@@ -1,11 +1,12 @@
 mavlink:
   connection_string: "127.0.0.1:14550"
   baud_rate: 115200
-  stream_rate_hz: 0
+  stream_rate_hz: 0   # 0 disables MAVLink streaming requests
 
 ros:
   ibn_result_topic: "/IBN/result"
   inject_rate_hz: 10
 
 log:
-  file_path: "/tmp/gps_injection.log"
+  file_path: "/logs/gps_injection.log"
+a
