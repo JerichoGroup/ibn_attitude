@@ -13,22 +13,14 @@ import yaml  # type: ignore[import-untyped]
 
 from ibn_mavlink.gps_injection.converter import GPSInputPayload, IBNToGPSConverter
 from ibn_mavlink.mavlink.client import GPSInputParams, MAVLinkClient
-
-
-_logger = logging.getLogger("GPSInjection")
-_logger.setLevel(logging.INFO)
-
-if not _logger.handlers:
-    _handler = StreamHandler()
-    _handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-    _logger.addHandler(_handler)
+from ibn_mavlink.utils.logger_setup import setup_logger
 
 
 def load_config(path: Path) -> dict:
     """Load config from YAML file."""
 
-    with path.open("r") as f:
-        return yaml.safe_load(f)
+    with path.open("r") as config_file:
+        return yaml.safe_load(config_file)
 
 
 class GPSInjectionNode(Node):
@@ -42,11 +34,15 @@ class GPSInjectionNode(Node):
         mavlink_config = config["mavlink"]
         ros = config["ros"]
 
+        self.log_file = config["log"]["file_path"]
+        self._logger = setup_logger("GPSInjection", self.log_file)
+
         self._client = MAVLinkClient(
             mavlink_config["connection_string"],
             mavlink_config["baud_rate"],
             mavlink_config["stream_rate_hz"],
             read_enabled=False,
+            logger=self._logger,
         )
 
         self._subscription = self.create_subscription(
@@ -61,8 +57,8 @@ class GPSInjectionNode(Node):
 
         self._latest_payload: Optional[GPSInputPayload] = None
 
-        _logger.info("GPS Injection Node initialized")
-        _logger.info(f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud")
+        self._logger.info("GPS Injection Node initialized")
+        self._logger.info(f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud")
 
 
     def _callback(self, msg: IBNResult) -> None:
@@ -76,7 +72,7 @@ class GPSInjectionNode(Node):
 
         self._latest_payload = gps_payload
 
-        _logger.info(f"Received GPS lat={gps_payload.lat:.7f}, lon={gps_payload.lon:.7f}, alt={gps_payload.alt:.2f}")
+        self._logger.info(f"Received GPS lat={gps_payload.lat:.7f}, lon={gps_payload.lon:.7f}, alt={gps_payload.alt:.2f}")
 
 
     def _inject_loop(self) -> None:
@@ -101,7 +97,7 @@ class GPSInjectionNode(Node):
             self._client.send_gps_input(params)
         
         except Exception as e:
-            _logger.error(f"Failed to inject GPS: {e}")
+            self._logger.error(f"Failed to inject GPS: {e}")
 
 
     def destroy_node(self) -> None:
