@@ -1,4 +1,7 @@
 ARG BASE_IMAGE=dustynv/ros:galactic-ros-base-l4t-r32.4.4
+ARG ATTITUDE_TAG=fixing_gps_node
+ARG INTERFACES_TAG=v0.5.0
+
 FROM --platform=linux/arm64/v8 ${BASE_IMAGE} AS build
 
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -53,9 +56,6 @@ RUN python3 -m pip install --no-cache-dir \
 
 WORKDIR /root/dev
 
-ARG ATTITUDE_TAG=fixing_gps_node
-ARG INTERFACES_TAG=v0.5.0
-
 COPY github_token.txt /tmp/github_token.txt
 
 RUN GITHUB_TOKEN=$(cat /tmp/github_token.txt) && \
@@ -78,8 +78,8 @@ RUN source /opt/ros/${ROS_DISTRO}/install/setup.bash && \
     cd /root/dev && \
     colcon build
 
-# ==================== RUNTIME ====================
 
+# Runtime image 
 FROM nvcr.io/nvidia/l4t-base:r32.4.4
 
 ENV DEBIAN_FRONTEND=noninteractive \

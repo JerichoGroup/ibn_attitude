@@ -1,17 +1,20 @@
 # syntax=docker/dockerfile:1.4
+
+ARG INTERFACES_TAG="v0.5.0"
+
 FROM ubuntu:20.04 AS build
 
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
 
-# -------------------- Locale --------------------
+# Locale
 RUN apt-get update && apt-get install -y locales && \
     locale-gen en_US en_US.UTF-8 && \
     update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 
 ENV LANG=en_US.UTF-8
 
-# -------------------- Base tools --------------------
+# Base tools
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -25,7 +28,7 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     && rm -rf /var/lib/apt/lists/*
 
-# -------------------- ROS2 Galactic --------------------
+# ROS2 Galactic
 RUN apt-get update && apt-get install -y curl gnupg2 lsb-release && \
     curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - && \
     echo "deb http://packages.ros.org/ros2/ubuntu focal main" > /etc/apt/sources.list.d/ros2.list && \
@@ -40,17 +43,15 @@ ENV ROS_ROOT=/opt/ros/galactic
 
 RUN rosdep init || true && rosdep update
 
-# -------------------- Python deps --------------------
+# Python deps
 RUN pip3 install --no-cache-dir \
     "Cython<3.0" \
     pyserial \
     toml \
     pymavlink==2.4.40
 
-# -------------------- Workspace --------------------
+# Workspace setup
 WORKDIR /root/dev
-
-ARG INTERFACES_TAG="v0.5.0"
 
 RUN --mount=type=secret,id=gh_token \
     GITHUB_TOKEN=$(cat /run/secrets/gh_token) && \
@@ -60,11 +61,11 @@ RUN --mount=type=secret,id=gh_token \
 
 COPY ./src/ibn_mavlink /root/dev/src/ibn_mavlink
 
-# -------------------- Build --------------------
+# Build
 RUN source /opt/ros/$ROS_DISTRO/setup.bash && \
     rosdep install --from-paths src --ignore-src -r -y
 
-# ==================== RUNTIME ====================
+# Runtime image
 FROM ubuntu:20.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
