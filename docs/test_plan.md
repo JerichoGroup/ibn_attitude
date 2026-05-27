@@ -85,7 +85,7 @@ src/ibn_mavlink/
 ```bash
 # Inside container
 cd /root/dev/src
-python3 -m pytest src/ibn_mavlink/test/ -v
+python3 -m pytest ibn_attitude/src/ibn_mavlink/test -v
 
 # Or via colcon
 colcon test --packages-select ibn_mavlink
