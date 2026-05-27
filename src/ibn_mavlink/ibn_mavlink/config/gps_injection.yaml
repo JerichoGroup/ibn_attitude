@@ -9,4 +9,3 @@ ros:
 
 log:
   file_path: "/logs/gps_injection.log"
-a
