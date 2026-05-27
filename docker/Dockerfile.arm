@@ -1,5 +1,5 @@
 ARG BASE_IMAGE=dustynv/ros:galactic-ros-base-l4t-r32.4.4
-ARG ATTITUDE_TAG=fixing_gps_node
+ARG ATTITUDE_TAG=fixing_ros_pkg
 ARG INTERFACES_TAG=v0.5.0
 
 FROM --platform=linux/arm64/v8 ${BASE_IMAGE} AS build
