@@ -4,32 +4,6 @@ Python ROS 2 package that connects to a Pixhawk running ArduCopter, reads live t
 
 ---
 
-## Repository Structure
-
-```
-ibn_attitude/
-├── docker/
-│   ├── Dockerfile          # PC (x86_64) build
-│   ├── Dockerfile.arm      # Jetson (ARM64) build
-│   └── entrypoint.sh       # Container startup script
-├── docker-compose.yml      # Docker Compose configuration
-├── github_token.txt        # Your GitHub token (create this file)
-├── docs/
-│   └── system_diagram.puml # PlantUML system diagram
-├── src/
-│   └── ibn_attitude/       # ROS 2 package
-│       ├── config/         # Node configurations
-│       ├── launch/         # Launch files
-│       ├── nodes/          # Node implementations
-│       │   ├── gps_injection/
-│       │   └── pixhawk_bridge/
-│       ├── package.xml
-│       └── setup.py
-└── README.md
-```
-
----
-
 ## System Architecture
 
 ![System Architecture](docs/system_diagram.svg)
@@ -59,7 +33,6 @@ Before building the Docker image, you need a GitHub personal access token:
 DOCKER_BUILDKIT=1 docker build \
   -f docker/Dockerfile \
   --secret id=gh_token,src=github_token.txt \
-  -t pixhawk_bridge:ibn .
 ```
 
 ### Build on Jetson (ARM64)
@@ -67,8 +40,6 @@ DOCKER_BUILDKIT=1 docker build \
 ```bash
 DOCKER_BUILDKIT=1 docker build \
   -f docker/Dockerfile.arm \
-  --secret id=gh_token,src=github_token.txt \
-  -t pixhawk_bridge:jetson .
 ```
 
 ---
@@ -105,69 +76,167 @@ docker run -it --rm \
 
 ## Configuration
 
-The config files in `src/ibn_attitude/config/` allow changing topic names and polling frequency:
+The system uses two YAML configuration files located in:
 
-| Parameter | Default Value |
-|-----------|---------------|
-| `attitude_topic_name` | `/mavlink/attitude` |
-| `altitude_topic_name` | `/mavlink/altitude` |
-| `hz` | `50` |
+src/ibn_attitude/config/
 
----
-
-## ROS 2 Topics
-
-### Attitude Topic
-
-```bash
-ros2 topic echo /mavlink/attitude
-```
-
-**Message Type:**
-```bash
-Metadata metadata
-std_msgs/Header header
-uint32 time_boot_ms
-float64 roll
-float64 pitch
-float64 yaw
-float64 rollspeed
-float64 pitchspeed
-float64 yawspeed
-```
-
-### Altitude Topic
-
-```bash
-ros2 topic echo /mavlink/altitude
-```
-
-**Message Type:**
-```bash
-std_msgs/Header header
-Metadata metadata
-float64 alt
-```
+- gps_injection.yaml → controls GPS/IBN injection behavior  
+- pixhawk_bridge.yaml → controls MAVLink ↔ ROS2 bridge settings  
 
 ---
 
-## Running the Nodes
+### gps_injection.yaml
+
+This file controls the GPS/IBN injection pipeline and ROS publishing rate.
+
+### Example Configuration
+
+ros:
+  ibn_result_topic: "/IBN/result"
+  inject_rate_hz: 10
+
+log:
+  file_path: "/logs/gps_injection.log"
+
+### Parameters
+
+ROS:
+
+- ibn_result_topic  
+  ROS2 topic where processed IBN results are published.
+
+- inject_rate_hz  
+  Frequency (Hz) at which GPS/IBN injection runs.
+
+Log:
+
+- file_path  
+  Path where injection logs are saved.
+
+---
+
+### pixhawk_bridge.yaml
+
+This file configures the MAVLink connection to the Pixhawk (or SITL) and streaming behavior.
+
+### Example Configuration
+
+mavlink:
+  connection_string: "127.0.0.1:14550"
+  baud_rate: 115200
+  stream_rate_hz: 0   # 0 disables MAVLink streaming requests
+
+ros:
+  attitude_topic_name: "/mavlink/attitude"
+  altitude_topic_name: "/mavlink/altitude"
+  hz: 50
+
+### Parameters
+
+MAVLink:
+
+- connection_string  
+  Endpoint for connecting to Pixhawk or SITL (UDP/TCP/serial).
+
+- baud_rate  
+  Serial communication speed.
+
+- stream_rate_hz  
+  MAVLink stream request rate. Set to 0 to disable automatic stream requests.
+
+ROS:
+
+- attitude_topic_name  
+  ROS2 topic for vehicle attitude data.
+
+- altitude_topic_name  
+  ROS2 topic for altitude data.
+
+- hz  
+  Update frequency for the bridge node.
+---
+
+## MAVLink ↔ ROS GPS Conventions
+
+This package bridges MAVLink telemetry and ROS 2 messages. It does not perform full unit normalization or coordinate frame conversion unless explicitly stated.
+
+---
+
+### Global Position (`GLOBAL_POSITION_INT`)
+
+MAVLink fields are interpreted in their native format:
+
+| Field | MAVLink Format | ROS Representation |
+|------|---------------|-------------------|
+| `lat` | degrees × 1e7 | int (raw MAVLink value) |
+| `lon` | degrees × 1e7 | int (raw MAVLink value) |
+| `alt` | millimeters (MSL altitude) | int (raw MAVLink value) |
+| `relative_alt` | millimeters above home | int (raw MAVLink value) |
+| `vx`, `vy`, `vz` | cm/s | cast to int |
+| `hdg` | centidegrees | cast to int |
+
+---
+
+### Attitude (`ATTITUDE`)
+
+- `roll`, `pitch`, `yaw` → radians
+- `rollspeed`, `pitchspeed`, `yawspeed` → rad/s
+- No unit conversion is applied before publishing
+
+---
+
+### GPS Injection (`GPS_INPUT`)
+
+When injecting GPS data into Pixhawk:
+
+#### Input (ROS → MAVLink expectation)
+
+| Field | Meaning | Unit |
+|------|--------|------|
+| `lat` | Latitude | degrees |
+| `lon` | Longitude | degrees |
+| `alt` | Altitude above MSL | meters |
+| `vn` | North velocity | m/s |
+| `ve` | East velocity | m/s |
+| `vd` | Down velocity | m/s |
+| `hdop` | Horizontal dilution of precision | unitless |
+| `satellites` | Visible satellites | count |
+
+#### MAVLink encoding:
+
+- `lat/lon` → `int(lat/lon × 1e7)`
+- `alt` → meters (passed directly)
+- timestamps → microseconds (`time.time() * 1e6`)
+- `hdop` is reused for:
+  - VDOP
+  - horizontal accuracy
+  - vertical accuracy
+
+---
+
+### Notes
+
+- No ENU/NED coordinate transformation is performed
+- Values follow MAVLink-native scaling rules
+- ROS consumers must interpret units correctly
+
+---
+
+## Running the Nodes on Jetson
 
 Inside the container:
 
 ```bash
-# Build the workspace
-cd /root/dev/src && colcon build
-
 # Source the workspace
-source install/setup.bash
+source /opt/ros/galactic/install/setup.bash
+source /root/dev/install/setup.bash
 
 # Run individual nodes
-ros2 run ibn_attitude pixhawk_bridge
-ros2 run ibn_attitude gps_injection
+ros2 run ibn_mavlink pixhawk_bridge
+ros2 run ibn_mavlink gps_injection
 
 # Or use the launch file
-ros2 launch ibn_attitude pixhawk_bridge.launch.py
+ros2 launch ibn_mavlink pixhawk_bridge_launch.py
 ```
 
 ---
@@ -176,7 +245,7 @@ ros2 launch ibn_attitude pixhawk_bridge.launch.py
 
 ### System Packages
 - ROS 2 Galactic
-- Python 3
+- Python3
 - colcon
 - rosdep
 
@@ -202,7 +271,7 @@ Tests are located in `src/ibn_mavlink/test/` and use pytest.
 ```bash
 # Inside container
 cd /root/dev/src
-python3 -m pytest src/ibn_mavlink/test/ -v
+python3 -m pytest ibn_attitude/src/ibn_mavlink/test -v
 
 # Or via colcon
 colcon test --packages-select ibn_mavlink
