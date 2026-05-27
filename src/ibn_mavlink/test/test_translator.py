@@ -1,78 +1,90 @@
-"""Tests for MavlinkTranslator logic."""
+"""Tests for MavlinkTranslator."""
+
+from unittest.mock import MagicMock
+
+from ibn_mavlink.pixhawk_bridge.translator import MavlinkTranslator
 
 
-class TestMavlinkTranslatorVelocityIntCasting:
-    """Tests for velocity int casting logic."""
+class TestMavlinkTranslator:
+    """Tests for MAVLink to ROS translation."""
 
-    def test_velocity_east_component_int_casting(self) -> None:
-        """Test vx (velocity east) int casting from float to integer."""
+    def test_to_global_position(self) -> None:
+        """Test GLOBAL_POSITION_INT translation."""
 
-        value_100_5 = 100.5
-        value_100_9 = 100.9
-        value_neg_100_5 = -100.5
-        expected_result = 100
+        node = MagicMock()
 
-        assert int(value_100_5) == expected_result
-        assert int(value_100_9) == expected_result
-        assert int(value_neg_100_5) == -expected_result
+        clock = MagicMock()
+        now = MagicMock()
+        stamp = MagicMock()
 
-    def test_velocity_north_component_int_casting(self) -> None:
-        """Test vy (velocity north) int casting from float to integer."""
+        node.get_clock.return_value = clock
+        clock.now.return_value = now
+        now.to_msg.return_value = stamp
 
-        value_200_7 = 200.7
-        value_neg_200_7 = -200.7
-        expected = 200
+        msg = MagicMock()
+        msg.time_boot_ms = 1000
+        msg.lat = 377749000
+        msg.lon = -1224194000
+        msg.alt = 100000
+        msg.relative_alt = 50000
 
-        assert int(value_200_7) == expected
-        assert int(value_neg_200_7) == -expected
+        msg.vx = 10.7
+        msg.vy = 20.2
+        msg.vz = -5.9
+        msg.hdg = 180.9
 
-    def test_velocity_down_component_int_casting(self) -> None:
-        """Test vz (velocity down) int casting from float to integer."""
+        ros_msg = MavlinkTranslator.to_global_position(node, msg)
 
-        value_neg_10_3 = -10.3
-        expected_result = -10
+        assert ros_msg.header.stamp == stamp
 
-        assert int(value_neg_10_3) == expected_result
+        assert ros_msg.time_boot_ms == 1000
+        assert ros_msg.lat == 377749000
+        assert ros_msg.lon == -1224194000
 
-    def test_vehicle_heading_angle_int_casting(self) -> None:
-        """Test vehicle heading angle int casting from float to integer."""
+        assert ros_msg.msl_altitude == 100000
+        assert ros_msg.relative_altitude == 50000
 
-        val_180_9 = 180.9
-        val_360_9 = 360.9
-        val_0_9 = 0.9
-        expected_180 = 180
-        expected_360 = 360
+        assert ros_msg.vx == 10
+        assert ros_msg.vy == 20
+        assert ros_msg.vz == -5
 
-        assert int(val_180_9) == expected_180
-        assert int(val_360_9) == expected_360
-        assert int(val_0_9) == 0
+        assert ros_msg.vehicle_heading_angle == 180
 
+    def test_to_attitude(self) -> None:
+        """Test ATTITUDE translation."""
 
-class TestMavlinkTranslatorFieldMapping:
-    """Tests for field mapping logic."""
+        node = MagicMock()
 
-    def test_global_position_message_field_count(self) -> None:
-        """Test that global position message has the expected number of fields."""
+        clock = MagicMock()
+        now = MagicMock()
+        stamp = MagicMock()
 
-        fields = [
-            "time_boot_ms",
-            "lat",
-            "lon",
-            "msl_altitude",
-            "relative_altitude",
-            "vx",
-            "vy",
-            "vz",
-            "vehicle_heading_angle",
-        ]
-        expected_count = 9
+        node.get_clock.return_value = clock
+        clock.now.return_value = now
+        now.to_msg.return_value = stamp
 
-        assert len(fields) == expected_count
+        msg = MagicMock()
 
-    def test_attitude_message_field_count(self) -> None:
-        """Test that attitude message has the expected number of fields."""
+        msg.time_boot_ms = 2000
+        msg.roll = 0.1
+        msg.pitch = 0.2
+        msg.yaw = 0.3
 
-        fields = ["time_boot_ms", "roll", "pitch", "yaw", "rollspeed", "pitchspeed", "yawspeed"]
-        expected_count = 7
+        msg.rollspeed = 0.01
+        msg.pitchspeed = 0.02
+        msg.yawspeed = 0.03
 
-        assert len(fields) == expected_count
+        ros_msg = MavlinkTranslator.to_attitude(node, msg)
+
+        assert ros_msg.header.stamp == stamp
+
+        assert ros_msg.time_boot_ms == 2000
+
+        assert ros_msg.roll == 0.1
+        assert ros_msg.pitch == 0.2
+        assert ros_msg.yaw == 0.3
+
+        assert ros_msg.rollspeed == 0.01
+        assert ros_msg.pitchspeed == 0.02
+        assert ros_msg.yawspeed == 0.03
+        

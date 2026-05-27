@@ -1,103 +1,106 @@
-"""Tests for GPSInjectionNode logic."""
+"""Tests for GPSInjectionNode."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-from ibn_mavlink.gps_injection.converter import GPSInputPayload, IBNToGPSConverter
+from ibn_mavlink.gps_injection.converter import GPSInputPayload
+from ibn_mavlink.gps_injection.node import GPSInjectionNode
 
 
-class TestGPSInjectionNodeLogic:
-    """Tests for node logic without ROS2 initialization."""
+TEST_CONFIG = {
+    "mavlink": {
+        "connection_string": "/dev/ttyACM0",
+        "baud_rate": 115200,
+        "stream_rate_hz": 10,
+    },
+    "ros": {
+        "ibn_result_topic": "/ibn_result",
+        "inject_rate_hz": 10,
+    },
+    "log": {
+        "file_path": "/tmp/test.log",
+    },
+}
 
-    def test_payload_attributes(self) -> None:
-        """Test GPSInputPayload attributes."""
 
-        test_lat = 37.7749
-        test_lon = -122.4194
-        test_alt = 100.0
-        test_accuracy = 1.5
-        expected_satellites = 10
+class TestGPSInjectionNode:
+    """Behavior tests for GPSInjectionNode logic."""
+
+    @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
+    def test_callback_stores_payload(self, mock_client):
+        node = GPSInjectionNode(TEST_CONFIG)
 
         payload = GPSInputPayload(
-            lat=test_lat, lon=test_lon, alt=test_alt, horiz_accuracy=test_accuracy, vert_accuracy=test_accuracy
+            lat=37.7749,
+            lon=-122.4194,
+            alt=100.0,
+            horiz_accuracy=1.5,
+            vert_accuracy=1.5,
         )
 
-        assert payload.lat == test_lat
-        assert payload.lon == test_lon
-        assert payload.alt == test_alt
-        assert payload.horiz_accuracy == test_accuracy
-        assert payload.vert_accuracy == test_accuracy
-        assert payload.satellites_visible == expected_satellites
+        msg = MagicMock()
 
-    def test_convert_returns_none_for_invalid_position_valid_false(self) -> None:
-        """Test IBNToGPSConverter returns None for position_valid=False."""
+        with patch(
+            "ibn_mavlink.gps_injection.node.IBNToGPSConverter.convert",
+            return_value=payload,
+        ):
+            node._callback(msg)
 
-        test_lat = 37.7749
-        test_lon = -122.4194
-        test_alt = 100.0
+        assert node._latest_payload == payload
+
+
+    @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
+    def test_callback_invalid_ignored(self, mock_client):
+        node = GPSInjectionNode(TEST_CONFIG)
 
         msg = MagicMock()
-        msg.position_valid = False
-        msg.position = [test_lat, test_lon, test_alt]
-        msg.position_accuracy = 1.5
 
-        result = IBNToGPSConverter.convert(msg)
+        with patch(
+            "ibn_mavlink.gps_injection.node.IBNToGPSConverter.convert",
+            return_value=None,
+        ):
+            node._callback(msg)
 
-        assert result is None
+        assert node._latest_payload is None
 
-    def test_convert_returns_none_for_invalid_position_length(self) -> None:
-        """Test IBNToGPSConverter returns None for wrong position length."""
 
-        msg = MagicMock()
-        msg.position_valid = True
-        msg.position = [37.7749]
-        msg.position_accuracy = 1.5
+    @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
+    def test_inject_loop_no_payload(self, mock_client):
+        node = GPSInjectionNode(TEST_CONFIG)
 
-        result = IBNToGPSConverter.convert(msg)
+        node._inject_loop()
 
-        assert result is None
+        node._client.send_gps_input.assert_not_called()
 
-    def test_convert_returns_payload_for_valid(self) -> None:
-        """Test IBNToGPSConverter returns payload for valid input."""
 
-        test_lat = 37.7749
-        test_lon = -122.4194
-        test_alt = 100.0
+    @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
+    def test_inject_loop_sends_gps(self, mock_client):
+        node = GPSInjectionNode(TEST_CONFIG)
 
-        msg = MagicMock()
-        msg.position_valid = True
-        msg.position = [test_lat, test_lon, test_alt]
-        msg.position_accuracy = 1.5
+        node._latest_payload = GPSInputPayload(
+            lat=37.7749,
+            lon=-122.4194,
+            alt=100.0,
+            horiz_accuracy=1.5,
+            vert_accuracy=1.5,
+        )
 
-        result = IBNToGPSConverter.convert(msg)
+        node._inject_loop()
 
-        assert result is not None
-        assert result.lat == test_lat
-        assert result.lon == test_lon
-        assert result.alt == test_alt
+        node._client.send_gps_input.assert_called_once()
 
-    def test_extract_position_with_valid_position_returns_position_tuple(self) -> None:
-        """Test extract_position returns tuple when position is valid."""
+        sent = node._client.send_gps_input.call_args[0][0]
 
-        test_lat = 37.7749
-        test_lon = -122.4194
-        test_alt = 100.0
+        assert sent.lat == 37.7749
+        assert sent.lon == -122.4194
+        assert sent.alt == 100.0
+        assert sent.hdop == 1.5
+        assert sent.satellites == 10
 
-        msg = MagicMock()
-        msg.position_valid = True
-        msg.position = [test_lat, test_lon, test_alt]
 
-        result = IBNToGPSConverter.extract_position(msg)
+    @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
+    def test_destroy_node_stops_client(self, mock_client):
+        node = GPSInjectionNode(TEST_CONFIG)
 
-        expected = (test_lat, test_lon, test_alt)
-        assert result == expected
+        node.destroy_node()
 
-    def test_extract_position_with_invalid_position_returns_none(self) -> None:
-        """Test extract_position returns None when position is invalid."""
-
-        msg = MagicMock()
-        msg.position_valid = False
-        msg.position = [37.7749, -122.4194, 100.0]
-
-        result = IBNToGPSConverter.extract_position(msg)
-
-        assert result is None
+        node._client.stop.assert_called_once()

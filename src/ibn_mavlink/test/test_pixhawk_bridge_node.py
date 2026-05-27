@@ -1,93 +1,232 @@
 """Tests for PixhawkTelemetry node logic."""
 
+from unittest.mock import MagicMock, patch
 
-class TestPixhawkClientLogic:
-    """Tests for MAVLinkClient logic in bridge context."""
-
-    def test_client_has_get_latest_method(self) -> None:
-        """Test client has get_latest method."""
-
-        from ibn_mavlink.mavlink.client import MAVLinkClient
-
-        assert hasattr(MAVLinkClient, "get_latest")
-
-    def test_client_has_send_gps_input_method(self) -> None:
-        """Test client has send_gps_input method."""
-
-        from ibn_mavlink.mavlink.client import MAVLinkClient
-
-        assert hasattr(MAVLinkClient, "send_gps_input")
-
-    def test_client_has_stop_method(self) -> None:
-        """Test client has stop method."""
-
-        from ibn_mavlink.mavlink.client import MAVLinkClient
-
-        assert hasattr(MAVLinkClient, "stop")
-
-    def test_gps_input_params_fields(self) -> None:
-        """Test GPSInputParams has expected fields."""
-
-        from ibn_mavlink.mavlink.client import GPSInputParams
-
-        params = GPSInputParams(lat=37.7749, lon=-122.4194, alt=100.0)
-        assert hasattr(params, "lat")
-        assert hasattr(params, "lon")
-        assert hasattr(params, "alt")
-        assert hasattr(params, "vn")
-        assert hasattr(params, "ve")
-        assert hasattr(params, "vd")
-        assert hasattr(params, "satellites")
-        assert hasattr(params, "hdop")
+from ibn_mavlink.pixhawk_bridge.node import PixhawkTelemetry
 
 
-class TestMAVLinkClientIntegration:
-    """Integration-style tests with mocked MAVLink."""
+TEST_CONFIG = {
+    "mavlink": {
+        "connection_string": "/dev/ttyACM0",
+        "baud_rate": 115200,
+        "stream_rate_hz": 10,
+    },
+    "ros": {
+        "global_position_topic": "/global_position",
+        "attitude_topic": "/attitude",
+        "init_position_topic": "/init_position",
+        "publish_rate_hz": 10,
+    },
+    "log": {
+        "file_path": "/tmp/test.log",
+    },
+}
 
-    def test_coordinate_conversion_helper(self) -> None:
-        """Test coordinate conversion logic."""
 
-        lat = 37.7749
-        lon = -122.4194
+class TestPixhawkBridgeNode:
+    """Behavior tests for PixhawkTelemetry."""
 
-        lat_int = int(lat * 1e7)
-        lon_int = int(lon * 1e7)
+    @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
+    @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
+    def test_destroy_node_stops_client(
+        self,
+        mock_client_class,
+        mock_logger,
+    ):
+        """Test destroy_node stops MAVLink client."""
 
-        expected_lat_int = 377749000
-        expected_lon_int = -1224194000
+        mock_logger.return_value = MagicMock()
 
-        assert lat_int == expected_lat_int
-        assert lon_int == expected_lon_int
+        mock_client = MagicMock()
+        mock_client_class.return_value = mock_client
 
-    def test_velocity_conversion_helper(self) -> None:
-        """Test velocity conversion logic."""
+        with patch.object(PixhawkTelemetry, "create_publisher"), \
+             patch.object(PixhawkTelemetry, "create_timer"), \
+             patch("rclpy.node.Node.destroy_node"):
 
-        vn = 10.5
-        ve = 20.7
-        vd = -5.3
+            node = PixhawkTelemetry(TEST_CONFIG)
+            node.destroy_node()
 
-        vn_cm = int(vn * 100)
-        ve_cm = int(ve * 100)
-        vd_cm = int(vd * 100)
+        mock_client.stop.assert_called_once()
 
-        expected_vn_cm = 1050
-        expected_ve_cm = 2070
-        expected_vd_cm = -530
 
-        assert vn_cm == expected_vn_cm
-        assert ve_cm == expected_ve_cm
-        assert vd_cm == expected_vd_cm
+    @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
+    @patch("ibn_mavlink.pixhawk_bridge.node.MavlinkTranslator")
+    @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
+    def test_tick_skips_when_no_messages(
+        self,
+        mock_client_class,
+        mock_translator,
+        mock_logger,
+    ):
+        """Test tick does nothing when no MAVLink messages."""
 
-    def test_hdop_conversion_helper(self) -> None:
-        """Test HDOP conversion logic."""
+        mock_logger.return_value = MagicMock()
 
-        hdop = 2.0
+        mock_client = MagicMock()
+        mock_client.get_latest.return_value = None
+        mock_client_class.return_value = mock_client
 
-        horiz_accuracy = int(hdop * 100)
-        vert_accuracy = int(hdop * 150)
+        mock_global_pub = MagicMock()
+        mock_att_pub = MagicMock()
+        mock_init_pub = MagicMock()
 
-        expected_horiz = 200
-        expected_vert = 300
+        with patch.object(
+            PixhawkTelemetry,
+            "create_publisher",
+            side_effect=[
+                mock_global_pub,
+                mock_att_pub,
+                mock_init_pub,
+            ],
+        ), patch.object(PixhawkTelemetry, "create_timer"):
 
-        assert horiz_accuracy == expected_horiz
-        assert vert_accuracy == expected_vert
+            node = PixhawkTelemetry(TEST_CONFIG)
+            node._tick()
+
+        mock_translator.to_global_position.assert_not_called()
+        mock_translator.to_attitude.assert_not_called()
+
+        mock_global_pub.publish.assert_not_called()
+        mock_att_pub.publish.assert_not_called()
+        mock_init_pub.publish.assert_not_called()
+
+
+    @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
+    @patch("ibn_mavlink.pixhawk_bridge.node.MavlinkTranslator")
+    @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
+    def test_tick_global_position_flow(
+        self,
+        mock_client_class,
+        mock_translator,
+        mock_logger,
+    ):
+        """Test global position publish flow."""
+
+        mock_logger.return_value = MagicMock()
+
+        mock_global_msg = MagicMock()
+
+        mock_client = MagicMock()
+        mock_client.get_latest.side_effect = [
+            mock_global_msg,
+            None,
+        ]
+        mock_client_class.return_value = mock_client
+
+        mock_ros_msg = MagicMock()
+        mock_translator.to_global_position.return_value = mock_ros_msg
+
+        mock_global_pub = MagicMock()
+        mock_att_pub = MagicMock()
+        mock_init_pub = MagicMock()
+
+        with patch.object(
+            PixhawkTelemetry,
+            "create_publisher",
+            side_effect=[
+                mock_global_pub,
+                mock_att_pub,
+                mock_init_pub,
+            ],
+        ), patch.object(PixhawkTelemetry, "create_timer"):
+
+            node = PixhawkTelemetry(TEST_CONFIG)
+            node._tick()
+
+        mock_translator.to_global_position.assert_called_once_with(
+            node,
+            mock_global_msg,
+        )
+
+        mock_global_pub.publish.assert_called()
+
+
+    @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
+    @patch("ibn_mavlink.pixhawk_bridge.node.MavlinkTranslator")
+    @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
+    def test_tick_attitude_flow(
+        self,
+        mock_client_class,
+        mock_translator,
+        mock_logger,
+    ):
+        """Test attitude publish flow."""
+
+        mock_logger.return_value = MagicMock()
+
+        mock_att_msg = MagicMock()
+
+        mock_client = MagicMock()
+        mock_client.get_latest.side_effect = [
+            None,
+            mock_att_msg,
+        ]
+        mock_client_class.return_value = mock_client
+
+        mock_ros_msg = MagicMock()
+        mock_translator.to_attitude.return_value = mock_ros_msg
+
+        mock_global_pub = MagicMock()
+        mock_att_pub = MagicMock()
+        mock_init_pub = MagicMock()
+
+        with patch.object(
+            PixhawkTelemetry,
+            "create_publisher",
+            side_effect=[
+                mock_global_pub,
+                mock_att_pub,
+                mock_init_pub,
+            ],
+        ), patch.object(PixhawkTelemetry, "create_timer"):
+
+            node = PixhawkTelemetry(TEST_CONFIG)
+            node._tick()
+
+        mock_translator.to_attitude.assert_called_once_with(
+            node,
+            mock_att_msg,
+        )
+
+        mock_att_pub.publish.assert_called_once_with(mock_ros_msg)
+
+
+    @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
+    @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
+    def test_init_position_published_once(
+        self,
+        mock_client_class,
+        mock_logger,
+    ):
+        """Test init position publishing."""
+
+        mock_logger.return_value = MagicMock()
+
+        mock_client = MagicMock()
+        mock_client.get_latest.return_value = None
+        mock_client_class.return_value = mock_client
+
+        mock_global_pub = MagicMock()
+        mock_att_pub = MagicMock()
+        mock_init_pub = MagicMock()
+
+        with patch.object(
+            PixhawkTelemetry,
+            "create_publisher",
+            side_effect=[
+                mock_global_pub,
+                mock_att_pub,
+                mock_init_pub,
+            ],
+        ), patch.object(PixhawkTelemetry, "create_timer"):
+
+            node = PixhawkTelemetry(TEST_CONFIG)
+
+            node._init_position = MagicMock()
+
+            node._publish_init_position()
+
+        mock_init_pub.publish.assert_called_once_with(
+            node._init_position
+        )

@@ -70,32 +70,39 @@ class TestMAVLinkClientCoordinateConversion:
         expected_lat = 37.7749
         expected_lon = -122.4194
         expected_alt = 100.0
+
         expected_lat_int = 377749000
         expected_lon_int = -1224194000
-        expected_alt_cm = 10000
 
         mock_master = MagicMock()
         mock_master.target_system = 1
         mock_master.target_component = 1
         mock_master.wait_heartbeat.return_value = True
+
         mock_mavutil.mavlink_connection.return_value = mock_master
         mock_mavutil.mavlink.MAV_DATA_STREAM_ALL = 0
 
         client = MAVLinkClient("/dev/ttyACM0", 115200, rate=0, read_enabled=False)
 
-        params = GPSInputParams(lat=expected_lat, lon=expected_lon, alt=expected_alt)
+        params = GPSInputParams(
+            lat=expected_lat,
+            lon=expected_lon,
+            alt=expected_alt,
+        )
+
         client.send_gps_input(params)
 
         mock_master.mav.gps_input_send.assert_called_once()
-        call_args = mock_master.mav.gps_input_send.call_args
 
-        lat_int = call_args[0][2]
-        lon_int = call_args[0][3]
-        alt_cm = call_args[0][4]
+        call_args = mock_master.mav.gps_input_send.call_args[0]
+
+        lat_int = call_args[6]
+        lon_int = call_args[7]
+        alt = call_args[8]
 
         assert lat_int == expected_lat_int
         assert lon_int == expected_lon_int
-        assert alt_cm == expected_alt_cm
+        assert alt == expected_alt
 
     @patch("ibn_mavlink.mavlink.client.mavutil")
     def test_coordinate_conversion_negative(self, mock_mavutil: "MagicMock") -> None:
@@ -104,6 +111,7 @@ class TestMAVLinkClientCoordinateConversion:
         expected_lat = -33.8688
         expected_lon = 151.2093
         expected_alt = 50.0
+
         expected_lat_int = -338688000
         expected_lon_int = 1512093000
 
@@ -111,19 +119,26 @@ class TestMAVLinkClientCoordinateConversion:
         mock_master.target_system = 1
         mock_master.target_component = 1
         mock_master.wait_heartbeat.return_value = True
+
         mock_mavutil.mavlink_connection.return_value = mock_master
         mock_mavutil.mavlink.MAV_DATA_STREAM_ALL = 0
 
         client = MAVLinkClient("/dev/ttyACM0", 115200, rate=0, read_enabled=False)
 
-        params = GPSInputParams(lat=expected_lat, lon=expected_lon, alt=expected_alt)
+        params = GPSInputParams(
+            lat=expected_lat,
+            lon=expected_lon,
+            alt=expected_alt,
+        )
+
         client.send_gps_input(params)
 
         mock_master.mav.gps_input_send.assert_called_once()
-        call_args = mock_master.mav.gps_input_send.call_args
 
-        lat_int = call_args[0][2]
-        lon_int = call_args[0][3]
+        call_args = mock_master.mav.gps_input_send.call_args[0]
+
+        lat_int = call_args[6]
+        lon_int = call_args[7]
 
         assert lat_int == expected_lat_int
         assert lon_int == expected_lon_int
@@ -135,95 +150,119 @@ class TestMAVLinkClientCoordinateConversion:
         expected_lat = 89.9999999
         expected_lon = 179.9999999
         expected_alt = 8848.0
+
         expected_lat_int = 899999999
         expected_lon_int = 1799999999
-        expected_alt_cm = 884800
 
         mock_master = MagicMock()
         mock_master.target_system = 1
         mock_master.target_component = 1
         mock_master.wait_heartbeat.return_value = True
+
         mock_mavutil.mavlink_connection.return_value = mock_master
         mock_mavutil.mavlink.MAV_DATA_STREAM_ALL = 0
 
         client = MAVLinkClient("/dev/ttyACM0", 115200, rate=0, read_enabled=False)
 
-        params = GPSInputParams(lat=expected_lat, lon=expected_lon, alt=expected_alt)
+        params = GPSInputParams(
+            lat=expected_lat,
+            lon=expected_lon,
+            alt=expected_alt,
+        )
+
         client.send_gps_input(params)
 
         mock_master.mav.gps_input_send.assert_called_once()
-        call_args = mock_master.mav.gps_input_send.call_args
 
-        lat_int = call_args[0][2]
-        lon_int = call_args[0][3]
-        alt_cm = call_args[0][4]
+        call_args = mock_master.mav.gps_input_send.call_args[0]
+
+        lat_int = call_args[6]
+        lon_int = call_args[7]
+        alt = call_args[8]
 
         assert lat_int == expected_lat_int
         assert lon_int == expected_lon_int
-        assert alt_cm == expected_alt_cm
+        assert alt == expected_alt
 
     @patch("ibn_mavlink.mavlink.client.mavutil")
     def test_velocity_conversion(self, mock_mavutil: "MagicMock") -> None:
-        """Test velocity conversion to cm/s."""
+        """Test velocity values passed correctly."""
 
         expected_vn = 10.5
         expected_ve = 20.7
         expected_vd = -5.3
-        expected_vn_cm = 1050
-        expected_ve_cm = 2070
-        expected_vd_cm = -530
 
         mock_master = MagicMock()
         mock_master.target_system = 1
         mock_master.target_component = 1
         mock_master.wait_heartbeat.return_value = True
+
         mock_mavutil.mavlink_connection.return_value = mock_master
         mock_mavutil.mavlink.MAV_DATA_STREAM_ALL = 0
 
         client = MAVLinkClient("/dev/ttyACM0", 115200, rate=0, read_enabled=False)
 
-        params = GPSInputParams(lat=37.7749, lon=-122.4194, alt=100.0, vn=expected_vn, ve=expected_ve, vd=expected_vd)
+        params = GPSInputParams(
+            lat=37.7749,
+            lon=-122.4194,
+            alt=100.0,
+            vn=expected_vn,
+            ve=expected_ve,
+            vd=expected_vd,
+        )
+
         client.send_gps_input(params)
 
         mock_master.mav.gps_input_send.assert_called_once()
-        call_args = mock_master.mav.gps_input_send.call_args
 
-        vn_cm = call_args[0][5]
-        ve_cm = call_args[0][6]
-        vd_cm = call_args[0][7]
+        call_args = mock_master.mav.gps_input_send.call_args[0]
 
-        assert vn_cm == expected_vn_cm
-        assert ve_cm == expected_ve_cm
-        assert vd_cm == expected_vd_cm
+        vn = call_args[11]
+        ve = call_args[12]
+        vd = call_args[13]
+
+        assert vn == expected_vn
+        assert ve == expected_ve
+        assert vd == expected_vd
 
     @patch("ibn_mavlink.mavlink.client.mavutil")
     def test_hdop_to_accuracy_conversion(self, mock_mavutil: "MagicMock") -> None:
-        """Test HDOP to accuracy conversion."""
+        """Test HDOP values passed correctly."""
 
         hdop = 2.0
-        expected_horiz_accuracy = 200
-        expected_vert_accuracy = 300
 
         mock_master = MagicMock()
         mock_master.target_system = 1
         mock_master.target_component = 1
         mock_master.wait_heartbeat.return_value = True
+
         mock_mavutil.mavlink_connection.return_value = mock_master
         mock_mavutil.mavlink.MAV_DATA_STREAM_ALL = 0
 
         client = MAVLinkClient("/dev/ttyACM0", 115200, rate=0, read_enabled=False)
 
-        params = GPSInputParams(lat=37.7749, lon=-122.4194, alt=100.0, hdop=hdop)
+        params = GPSInputParams(
+            lat=37.7749,
+            lon=-122.4194,
+            alt=100.0,
+            hdop=hdop,
+        )
+
         client.send_gps_input(params)
 
         mock_master.mav.gps_input_send.assert_called_once()
-        call_args = mock_master.mav.gps_input_send.call_args
 
-        horiz_accuracy = call_args[0][8]
-        vert_accuracy = call_args[0][9]
+        call_args = mock_master.mav.gps_input_send.call_args[0]
 
-        assert horiz_accuracy == expected_horiz_accuracy
-        assert vert_accuracy == expected_vert_accuracy
+        hdop_result = call_args[9]
+        vdop_result = call_args[10]
+        horiz_accuracy = call_args[15]
+        vert_accuracy = call_args[16]
+
+        assert hdop_result == hdop
+        assert vdop_result == hdop
+        assert horiz_accuracy == hdop
+        assert vert_accuracy == hdop
 
     @patch("ibn_mavlink.mavlink.client.mavutil")
     def test_satellite_count(self, mock_mavutil: "MagicMock") -> None:
@@ -235,18 +274,26 @@ class TestMAVLinkClientCoordinateConversion:
         mock_master.target_system = 1
         mock_master.target_component = 1
         mock_master.wait_heartbeat.return_value = True
+
         mock_mavutil.mavlink_connection.return_value = mock_master
         mock_mavutil.mavlink.MAV_DATA_STREAM_ALL = 0
 
         client = MAVLinkClient("/dev/ttyACM0", 115200, rate=0, read_enabled=False)
 
-        params = GPSInputParams(lat=37.7749, lon=-122.4194, alt=100.0, satellites=satellites)
+        params = GPSInputParams(
+            lat=37.7749,
+            lon=-122.4194,
+            alt=100.0,
+            satellites=satellites,
+        )
+
         client.send_gps_input(params)
 
         mock_master.mav.gps_input_send.assert_called_once()
-        call_args = mock_master.mav.gps_input_send.call_args
 
-        satellites_result = call_args[0][10]
+        call_args = mock_master.mav.gps_input_send.call_args[0]
+
+        satellites_result = call_args[17]
 
         assert satellites_result == satellites
 
@@ -302,6 +349,7 @@ class TestMAVLinkClientGetLatest:
         mock_master.target_system = 1
         mock_master.target_component = 1
         mock_master.wait_heartbeat.return_value = True
+        mock_master.recv_match.return_value = None
         mock_mavutil.mavlink_connection.return_value = mock_master
         mock_mavutil.mavlink.MAV_DATA_STREAM_ALL = 0
 
@@ -351,6 +399,7 @@ class TestMAVLinkClientStop:
         mock_master.target_system = 1
         mock_master.target_component = 1
         mock_master.wait_heartbeat.return_value = True
+        mock_master.recv_match.return_value = None
         mock_mavutil.mavlink_connection.return_value = mock_master
         mock_mavutil.mavlink.MAV_DATA_STREAM_ALL = 0
 
@@ -370,6 +419,7 @@ class TestMAVLinkClientStop:
         mock_master.target_system = 1
         mock_master.target_component = 1
         mock_master.wait_heartbeat.return_value = True
+        mock_master.recv_match.return_value = None
         mock_mavutil.mavlink_connection.return_value = mock_master
         mock_mavutil.mavlink.MAV_DATA_STREAM_ALL = 0
 
@@ -393,3 +443,31 @@ class TestMAVLinkClientStop:
         client = MAVLinkClient("/dev/ttyACM0", 115200, rate=0, read_enabled=False)
 
         assert not hasattr(client, "_thread")
+
+    @patch("ibn_mavlink.mavlink.client.mavutil")
+    def test_reconnect_called_on_recv_exception(self, mock_mavutil: "MagicMock") -> None:
+        """Test reconnect triggered on MAVLink read failure."""
+
+        mock_master = MagicMock()
+        mock_master.target_system = 1
+        mock_master.target_component = 1
+        mock_master.wait_heartbeat.return_value = True
+        mock_master.recv_match.side_effect = Exception(
+            "Connection lost"
+        )
+        mock_mavutil.mavlink_connection.return_value = mock_master
+        mock_mavutil.mavlink.MAV_DATA_STREAM_ALL = 0
+
+        with patch.object(MAVLinkClient, "_reconnect") as mock_reconnect:
+            client = MAVLinkClient(
+                "/dev/ttyACM0",
+                115200,
+                rate=0,
+                read_enabled=True,
+            )
+
+            time.sleep(0.05)
+
+            mock_reconnect.assert_called_once()
+
+            client.stop()
