@@ -13,21 +13,14 @@ import yaml  # type: ignore[import-untyped]
 
 from ibn_mavlink.mavlink.client import MAVLinkClient
 from ibn_mavlink.pixhawk_bridge.translator import GlobalPositionMessage, MavlinkTranslator
-
-_logger = logging.getLogger("PixhawkTelemetry")
-_logger.setLevel(logging.INFO)
-
-if not _logger.handlers:
-    _handler = StreamHandler()
-    _handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-    _logger.addHandler(_handler)
+from ibn_mavlink.utils.logger_setup import setup_logger
 
 
 def load_config(path: Path) -> dict:
     """Load config from YAML file."""
 
-    with path.open("r") as f:
-        return yaml.safe_load(f)
+    with path.open("r") as config_file:
+        return yaml.safe_load(config_file)
 
 
 class PixhawkTelemetry(Node):
@@ -41,6 +34,9 @@ class PixhawkTelemetry(Node):
         mavlink_config = config["mavlink"]
         ros_config = config["ros"]
 
+        self.log_file = config["log"]["file_path"]
+        self._logger = setup_logger("PixhawkTelemetry", self.log_file)
+
         self._pub_global = self.create_publisher(GlobalPositionInt, ros_config["global_position_topic"], 10)
         self._pub_attitude = self.create_publisher(Attitude, ros_config["attitude_topic"], 10)
         self._pub_init = self.create_publisher(GlobalPositionInt, ros_config["init_position_topic"], 10)
@@ -48,13 +44,18 @@ class PixhawkTelemetry(Node):
         self._client = MAVLinkClient(
             mavlink_config["connection_string"],
             mavlink_config["baud_rate"],
-            mavlink_config["stream_rate_hz"]
+            mavlink_config["stream_rate_hz"],
+            read_enabled=True,
+            logger=self._logger,
         )
 
         self._init_position = None
 
         publish_hz = ros_config["publish_rate_hz"]
         self.create_timer(1.0 / publish_hz, self._tick)
+
+        self._logger.info("Pixhawk Telemetry Node initialized")
+        self._logger.info(f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud")
 
 
     def _tick(self) -> None:
@@ -80,6 +81,7 @@ class PixhawkTelemetry(Node):
 
         if self._init_position is None:
             self._init_position = ros_msg
+            self._logger.info("First global position received (init set)")
 
         self._pub_global.publish(ros_msg)
 
