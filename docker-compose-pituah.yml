@@ -17,7 +17,7 @@ services:
       - /dev/ttyACM1:/dev/ttyACM1
 
     volumes:
-    - ./src/ibn_mavlink/test:~/dev/src/src/ibn_mavlink/test
+    - ./src/ibn_mavlink/test:/root/dev/src/src/ibn_mavlink/test
     - ./:/
 
     environment:
