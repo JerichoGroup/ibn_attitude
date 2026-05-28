@@ -16,11 +16,8 @@ services:
       - /dev/ttyACM0:/dev/ttyACM0
       - /dev/ttyACM1:/dev/ttyACM1
 
-    # 🔥 ADD THIS
     volumes:
-      - .:/ws
-
-    working_dir: /ws
+    - ./src/ibn_mavlink/test:~/dev/src/src/ibn_mavlink/test
 
     environment:
       - DISPLAY=${DISPLAY}
@@ -31,7 +28,7 @@ services:
     restart: unless-stopped
 
     command: bash -c "./entrypoint_arm.sh"
-    
+
   mavproxy:
     image: sitin/mavproxy:latest
     container_name: ibn_mavproxy_arm
