@@ -43,6 +43,7 @@ class MAVLinkClient:
         self._conn_str = conn_str
         self._baud = baud
         self._rate = rate
+        self._recv_timeout = recv_timeout
 
         self._latest: Dict[str, Any] = {}
         self._lock = threading.Lock()
@@ -56,7 +57,6 @@ class MAVLinkClient:
 
         self._connect()
 
-        self._thread: Optional[threading.Thread] = None
         if self._read_enabled:
             self._thread = threading.Thread(
                 target=self._read_loop,
@@ -86,7 +86,6 @@ class MAVLinkClient:
                 pass
             raise RuntimeError("No heartbeat received")
 
-        # Only assign AFTER success
         self._master = master
 
         self._logger.info("Connected to Pixhawk")
@@ -130,7 +129,7 @@ class MAVLinkClient:
                 msg = master.recv_match(blocking=False)
 
                 if msg is None:
-                    time.sleep(0.01)
+                    time.sleep(self._recv_timeout)
                     continue
 
                 with self._lock:
@@ -162,7 +161,7 @@ class MAVLinkClient:
         try:
             self._connect()
             return True
-        
+
         except Exception as e:
             self._logger.error(f"Reconnect attempt failed: {e}")
             return False
@@ -171,16 +170,14 @@ class MAVLinkClient:
     def _reconnect(self) -> None:
         """Reconnect loop with backoff."""
 
-        # prevents multiple reconnect threads
-        if not self._reconnect_lock.acquire(blocking=False): 
+        if not self._reconnect_lock.acquire(blocking=False):
             return
-        
+
         try:
             while self._running:
                 self._logger.warning("MAVLink reconnecting...")
 
                 self._disconnect()
-
                 time.sleep(1.0)
 
                 if self._attempt_connect():
@@ -188,7 +185,6 @@ class MAVLinkClient:
                     return
 
                 time.sleep(2.0)
-
         finally:
             self._reconnect_lock.release()
 
@@ -207,7 +203,7 @@ class MAVLinkClient:
 
         self._disconnect()
 
-        if hasattr(self, "_thread") and self._thread:
+        if hasattr(self, "_thread"):
             self._thread.join(timeout=2)
 
 

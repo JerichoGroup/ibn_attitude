@@ -1,9 +1,7 @@
 """ROS2 node for Pixhawk telemetry bridge."""
 
-import logging
-from logging import StreamHandler
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from ament_index_python import get_package_share_directory
 from interfaces.msg import Attitude, GlobalPositionInt
@@ -17,17 +15,20 @@ from ibn_mavlink.utils.logger_setup import setup_logger
 
 
 def load_config(path: Path) -> dict:
-    """Load config from YAML file."""
-
     with path.open("r") as config_file:
         return yaml.safe_load(config_file)
+
+
+def ros_init_if_needed() -> None:
+    if not rclpy.ok():
+        rclpy.init()
 
 
 class PixhawkTelemetry(Node):
     """Bridge between Pixhawk MAVLink and ROS2."""
 
     def __init__(self, config: Dict[str, Any]) -> None:
-        """Initialize node."""
+        ros_init_if_needed()
 
         super().__init__("pixhawk_bridge_node")
 
@@ -37,9 +38,15 @@ class PixhawkTelemetry(Node):
         self.log_file = config["log"]["file_path"]
         self._logger = setup_logger("PixhawkTelemetry", self.log_file)
 
-        self._pub_global = self.create_publisher(GlobalPositionInt, ros_config["global_position_topic"], 10)
-        self._pub_attitude = self.create_publisher(Attitude, ros_config["attitude_topic"], 10)
-        self._pub_init = self.create_publisher(GlobalPositionInt, ros_config["init_position_topic"], 10)
+        self._pub_global = self.create_publisher(
+            GlobalPositionInt, ros_config["global_position_topic"], 10
+        )
+        self._pub_attitude = self.create_publisher(
+            Attitude, ros_config["attitude_topic"], 10
+        )
+        self._pub_init = self.create_publisher(
+            GlobalPositionInt, ros_config["init_position_topic"], 10
+        )
 
         self._client = MAVLinkClient(
             mavlink_config["connection_string"],
@@ -49,13 +56,16 @@ class PixhawkTelemetry(Node):
             logger=self._logger,
         )
 
-        self._init_position = None
+        self._init_position: Optional[GlobalPositionInt] = None
+        self._init_published = False
 
         publish_hz = ros_config["publish_rate_hz"]
         self.create_timer(1.0 / publish_hz, self._tick)
 
         self._logger.info("Pixhawk Telemetry Node initialized")
-        self._logger.info(f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud")
+        self._logger.info(
+            f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud"
+        )
 
 
     def _tick(self) -> None:
@@ -87,16 +97,14 @@ class PixhawkTelemetry(Node):
 
 
     def _publish_init_position(self) -> None:
-        """Publish initial position once."""
-
-        if self._init_position:
+        if self._init_position and not self._init_published:
             self._pub_init.publish(self._init_position)
 
 
 def main() -> None:
     """Entry point."""
 
-    rclpy.init(args=None)
+    ros_init_if_needed()
 
     config_dir = get_package_share_directory("ibn_mavlink")
     config_path = Path(config_dir) / "config" / "pixhawk_bridge.yaml"

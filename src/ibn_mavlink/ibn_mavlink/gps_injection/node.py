@@ -1,7 +1,5 @@
 """ROS2 node for GPS injection back to Pixhawk."""
 
-import logging
-from logging import StreamHandler
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -17,17 +15,20 @@ from ibn_mavlink.utils.logger_setup import setup_logger
 
 
 def load_config(path: Path) -> dict:
-    """Load config from YAML file."""
-
     with path.open("r") as config_file:
         return yaml.safe_load(config_file)
+
+
+def ros_init_if_needed() -> None:
+    if not rclpy.ok():
+        rclpy.init()
 
 
 class GPSInjectionNode(Node):
     """Injects computed GPS position back to Pixhawk."""
 
     def __init__(self, config: Dict[str, Any]) -> None:
-        """Initialize node."""
+        ros_init_if_needed()
 
         super().__init__("gps_injection_node")
 
@@ -53,12 +54,16 @@ class GPSInjectionNode(Node):
         )
 
         self._inject_rate_hz = ros.get("inject_rate_hz", 10)
-        self._inject_timer = self.create_timer(1.0 / self._inject_rate_hz, self._inject_loop)
+        self._inject_timer = self.create_timer(
+            1.0 / self._inject_rate_hz, self._inject_loop
+        )
 
         self._latest_payload: Optional[GPSInputPayload] = None
 
         self._logger.info("GPS Injection Node initialized")
-        self._logger.info(f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud")
+        self._logger.info(
+            f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud"
+        )
 
 
     def _callback(self, msg: IBNResult) -> None:
@@ -67,12 +72,15 @@ class GPSInjectionNode(Node):
         gps_payload = IBNToGPSConverter.convert(msg)
 
         if gps_payload is None:
+            self._latest_payload = None
             self.get_logger().warn("Invalid position, skipping")
             return
 
         self._latest_payload = gps_payload
-
-        self._logger.info(f"Received GPS lat={gps_payload.lat:.7f}, lon={gps_payload.lon:.7f}, alt={gps_payload.alt:.2f}")
+        self._logger.info(
+            f"Received GPS lat={gps_payload.lat:.7f}, "
+            f"lon={gps_payload.lon:.7f}, alt={gps_payload.alt:.2f}"
+        )
 
 
     def _inject_loop(self) -> None:
@@ -95,22 +103,13 @@ class GPSInjectionNode(Node):
                 hdop=payload.horiz_accuracy,
             )
             self._client.send_gps_input(params)
-        
+
         except Exception as e:
             self._logger.error(f"Failed to inject GPS: {e}")
 
 
-    def destroy_node(self) -> None:
-        """Cleanup."""
-
-        self._client.stop()
-        super().destroy_node()
-
-
 def main(args: Optional[list] = None) -> None:
-    """Entry point."""
-
-    rclpy.init(args=args)
+    ros_init_if_needed()
 
     config_dir = get_package_share_directory("ibn_mavlink")
     config_path = Path(config_dir) / "config" / "gps_injection.yaml"
@@ -120,6 +119,7 @@ def main(args: Optional[list] = None) -> None:
     try:
         rclpy.spin(node)
     finally:
+        node._client.stop()
         node.destroy_node()
         rclpy.shutdown()
 
