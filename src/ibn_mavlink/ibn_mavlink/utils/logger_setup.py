@@ -2,6 +2,7 @@
 
 import logging
 from logging import StreamHandler, FileHandler
+from pathlib import Path
 
 
 def setup_logger(name: str, log_file: str, level=logging.INFO) -> logging.Logger:
@@ -21,6 +22,9 @@ def setup_logger(name: str, log_file: str, level=logging.INFO) -> logging.Logger
         console_handler = StreamHandler()
         console_handler.setFormatter(formatter)
         console_handler.setLevel(level)
+
+        # Create parent directory if missing
+        Path(log_file).parent.mkdir(parents=True, exist_ok=True)
 
         file_handler = FileHandler(log_file)
         file_handler.setFormatter(formatter)
