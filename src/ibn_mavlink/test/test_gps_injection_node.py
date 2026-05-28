@@ -6,28 +6,12 @@ from ibn_mavlink.gps_injection.converter import GPSInputPayload
 from ibn_mavlink.gps_injection.node import GPSInjectionNode
 
 
-TEST_CONFIG = {
-    "mavlink": {
-        "connection_string": "/dev/ttyACM0",
-        "baud_rate": 115200,
-        "stream_rate_hz": 10,
-    },
-    "ros": {
-        "ibn_result_topic": "/ibn_result",
-        "inject_rate_hz": 10,
-    },
-    "log": {
-        "file_path": "/tmp/test.log",
-    },
-}
-
-
 class TestGPSInjectionNode:
     """Behavior tests for GPSInjectionNode logic."""
 
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
-    def test_callback_stores_payload(self, mock_client):
-        node = GPSInjectionNode(TEST_CONFIG)
+    def test_callback_stores_payload(self, mock_client, valid_gps_injection_config):
+        node = GPSInjectionNode(valid_gps_injection_config)
 
         payload = GPSInputPayload(
             lat=37.7749,
@@ -49,8 +33,8 @@ class TestGPSInjectionNode:
 
 
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
-    def test_callback_invalid_ignored(self, mock_client):
-        node = GPSInjectionNode(TEST_CONFIG)
+    def test_callback_invalid_ignored(self, mock_client, valid_gps_injection_config):
+        node = GPSInjectionNode(valid_gps_injection_config)
 
         msg = MagicMock()
 
@@ -64,8 +48,8 @@ class TestGPSInjectionNode:
 
 
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
-    def test_inject_loop_no_payload(self, mock_client):
-        node = GPSInjectionNode(TEST_CONFIG)
+    def test_inject_loop_no_payload(self, mock_client, valid_gps_injection_config):
+        node = GPSInjectionNode(valid_gps_injection_config)
 
         node._inject_loop()
 
@@ -73,8 +57,8 @@ class TestGPSInjectionNode:
 
 
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
-    def test_inject_loop_sends_gps(self, mock_client):
-        node = GPSInjectionNode(TEST_CONFIG)
+    def test_inject_loop_sends_gps(self, mock_client, valid_gps_injection_config):
+        node = GPSInjectionNode(valid_gps_injection_config)
 
         node._latest_payload = GPSInputPayload(
             lat=37.7749,
@@ -98,8 +82,8 @@ class TestGPSInjectionNode:
 
 
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
-    def test_destroy_node_stops_client(self, mock_client):
-        node = GPSInjectionNode(TEST_CONFIG)
+    def test_destroy_node_stops_client(self, mock_client, valid_gps_injection_config):
+        node = GPSInjectionNode(valid_gps_injection_config)
 
         node.destroy_node()
 

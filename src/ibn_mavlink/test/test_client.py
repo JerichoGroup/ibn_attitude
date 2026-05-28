@@ -431,7 +431,7 @@ class TestMAVLinkClientStop:
 
     @patch("ibn_mavlink.mavlink.client.mavutil")
     def test_stop_no_thread_when_read_disabled(self, mock_mavutil: "MagicMock") -> None:
-        """Test no thread created when read_enabled=False."""
+        """Test no thread started when read_enabled=False."""
 
         mock_master = MagicMock()
         mock_master.target_system = 1
@@ -442,7 +442,7 @@ class TestMAVLinkClientStop:
 
         client = MAVLinkClient("/dev/ttyACM0", 115200, rate=0, read_enabled=False)
 
-        assert not hasattr(client, "_thread")
+        assert client._thread is None
 
     @patch("ibn_mavlink.mavlink.client.mavutil")
     def test_reconnect_called_on_recv_exception(self, mock_mavutil: "MagicMock") -> None:

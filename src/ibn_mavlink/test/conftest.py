@@ -1,69 +1,61 @@
-"""Shared test fixtures."""
+"""Shared test fixtures (ROS2-safe + MAVLink-safe)."""
 
 import sys
 from unittest.mock import MagicMock
 
 import pytest
 
-sys.modules["interfaces"] = MagicMock()
-sys.modules["interfaces.msg"] = MagicMock()
 
+# -----------------------------
+# SAFE ROS / INTERFACES MOCK
+# -----------------------------
+
+mock_interfaces = MagicMock()
+mock_interfaces.msg = MagicMock()
+
+sys.modules["interfaces"] = mock_interfaces
+sys.modules["interfaces.msg"] = mock_interfaces.msg
+
+
+# -----------------------------
+# MAVLINK FIXTURE
+# -----------------------------
 
 @pytest.fixture
 def mock_mavlink_connection():
-    """Create mock pymavlink connection with master and heartbeat message."""
+    """Mock pymavlink master connection."""
 
     mock_master = MagicMock()
     mock_master.target_system = 1
     mock_master.target_component = 1
 
-    mock_heartbeat_msg = MagicMock()
-    mock_heartbeat_msg.get_type.return_value = "HEARTBEAT"
-
     mock_master.wait_heartbeat.return_value = True
+    mock_master.recv_match.return_value = None
 
-    return mock_master, mock_heartbeat_msg
+    return mock_master
 
 
 @pytest.fixture
 def mock_pymavlink(monkeypatch, mock_mavlink_connection):
-    """Create mock pymavlink module for testing."""
-
-    mock_master, mock_heartbeat_msg = mock_mavlink_connection
+    """Mock pymavlink module."""
 
     mock_mavutil = MagicMock()
-    mock_mavutil.mavlink_connection.return_value = mock_master
+    mock_mavutil.mavlink_connection.return_value = mock_mavlink_connection
     mock_mavutil.mavlink.MAV_DATA_STREAM_ALL = 0
-
-    mock_mavutil.mavlink_connection.return_value.wait_heartbeat.return_value = True
-
-    import sys
 
     sys.modules["pymavlink"] = mock_mavutil
     sys.modules["pymavlink.mavutil"] = mock_mavutil
 
-    return mock_mavutil, mock_master
+    return mock_mavutil
 
 
-@pytest.fixture
-def mock_interfaces_msg():
-    """Create mock interfaces module for testing."""
-
-    mock_module = MagicMock()
-
-    mock_ibn_result = MagicMock()
-    mock_ibn_result.position_valid = True
-    mock_ibn_result.position = [37.7749, -122.4194, 100.0]
-    mock_ibn_result.position_accuracy = 1.5
-
-    mock_module.IBNResult = mock_ibn_result
-
-    return mock_module
-
+# -----------------------------
+# IBN RESULT MESSAGE FIXTURE
+# -----------------------------
 
 @pytest.fixture
 def sample_ibn_result():
-    """Create sample IBNResult message for testing."""
+    """Valid IBNResult mock message."""
 
     msg = MagicMock()
     msg.position_valid = True
@@ -72,9 +64,13 @@ def sample_ibn_result():
     return msg
 
 
+# -----------------------------
+# MAVLINK MESSAGES
+# -----------------------------
+
 @pytest.fixture
 def sample_global_position_msg():
-    """Create sample GLOBAL_POSITION_INT MAVLink message for testing."""
+    """GLOBAL_POSITION_INT message."""
 
     msg = MagicMock()
     msg.get_type.return_value = "GLOBAL_POSITION_INT"
@@ -92,7 +88,7 @@ def sample_global_position_msg():
 
 @pytest.fixture
 def sample_attitude_msg():
-    """Create sample ATTITUDE MAVLink message for testing."""
+    """ATTITUDE message."""
 
     msg = MagicMock()
     msg.get_type.return_value = "ATTITUDE"
@@ -106,10 +102,12 @@ def sample_attitude_msg():
     return msg
 
 
+# -----------------------------
+# CONFIGS
+# -----------------------------
+
 @pytest.fixture
 def valid_config():
-    """Create valid config dict for testing."""
-
     return {
         "mavlink": {
             "connection_string": "/dev/ttyACM0",
@@ -127,8 +125,6 @@ def valid_config():
 
 @pytest.fixture
 def valid_gps_injection_config():
-    """Create valid GPS injection config dict for testing."""
-
     return {
         "mavlink": {
             "connection_string": "/dev/ttyACM0",
@@ -138,5 +134,8 @@ def valid_gps_injection_config():
         "ros": {
             "ibn_result_topic": "/IBN/result",
             "inject_rate_hz": 10,
+        },
+        "log": {
+            "file_path": "/tmp/test.log",
         },
     }
