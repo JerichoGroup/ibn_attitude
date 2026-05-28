@@ -18,6 +18,7 @@ services:
 
     volumes:
     - ./src/ibn_mavlink/test:~/dev/src/src/ibn_mavlink/test
+    - ./:/
 
     environment:
       - DISPLAY=${DISPLAY}
