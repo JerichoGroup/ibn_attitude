@@ -7,15 +7,16 @@ from ibn_mavlink.pixhawk_bridge.translator import MavlinkTranslator
 
 
 class TestMavlinkTranslator:
-    """Unit tests for MavlinkTranslator conversion logic."""
+    """Tests for MAVLink to ROS translation."""
 
-    def test_to_global_position(self):
-        """Test conversion of GLOBAL_POSITION_INT message to ROS message."""
+    def test_to_global_position(self) -> None:
+        """Test GLOBAL_POSITION_INT translation."""
+
         node = MagicMock()
 
-        stamp = Time()
-        now = MagicMock()
+        stamp = Time(sec=123, nanosec=456)
         clock = MagicMock()
+        now = MagicMock()
 
         node.get_clock.return_value = clock
         clock.now.return_value = now
@@ -42,21 +43,22 @@ class TestMavlinkTranslator:
         assert ros_msg.msl_altitude == 100000
         assert ros_msg.relative_altitude == 50000
 
-        # rounding behavior (important fix: match real code intent)
-        assert ros_msg.vx == int(10.7)
-        assert ros_msg.vy == int(20.2)
-        assert ros_msg.vz == int(-5.9)
-        assert ros_msg.vehicle_heading_angle == int(180.9)
+        assert ros_msg.vx == 10
+        assert ros_msg.vy == 20
+        assert ros_msg.vz == -5
+
+        assert ros_msg.vehicle_heading_angle == 180
 
 
-    def test_to_attitude(self):
-        """Test conversion of ATTITUDE message to ROS message."""
-        
+    def test_to_attitude(self) -> None:
+        """Test ATTITUDE translation."""
+
         node = MagicMock()
 
-        stamp = Time()
-        now = MagicMock()
+        stamp = Time(sec=111, nanosec=222)
+
         clock = MagicMock()
+        now = MagicMock()
 
         node.get_clock.return_value = clock
         clock.now.return_value = now
