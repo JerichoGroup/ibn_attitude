@@ -2,7 +2,16 @@
 
 from unittest.mock import MagicMock, patch
 
-from ibn_mavlink.pixhawk_bridge.node import PixhawkTelemetry
+# IMPORTANT:
+# We patch the logger BEFORE importing PixhawkTelemetry,
+# because ROS2 creates the rosout publisher during Node.__init__ at import time.
+
+@patch("ibn_mavlink.pixhawk_bridge.node.rclpy.logging.get_logger", return_value=MagicMock())
+def import_pixhawk_telemetry(mock_logger):
+    from ibn_mavlink.pixhawk_bridge.node import PixhawkTelemetry
+    return PixhawkTelemetry
+
+PixhawkTelemetry = import_pixhawk_telemetry()  # load with patched logger
 
 
 class TestPixhawkBridgeNode:
@@ -48,8 +57,7 @@ class TestPixhawkBridgeNode:
         mock_client.get_latest.return_value = None
         mock_client_class.return_value = mock_client
 
-        with patch("ibn_mavlink.pixhawk_bridge.node.get_logger", return_value=MagicMock()), \
-             patch.object(PixhawkTelemetry, "create_publisher",
+        with patch.object(PixhawkTelemetry, "create_publisher",
                           side_effect=[MagicMock(), MagicMock(), MagicMock()]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
@@ -84,8 +92,7 @@ class TestPixhawkBridgeNode:
 
         mock_pub = MagicMock()
 
-        with patch("ibn_mavlink.pixhawk_bridge.node.get_logger", return_value=MagicMock()), \
-             patch.object(PixhawkTelemetry, "create_publisher",
+        with patch.object(PixhawkTelemetry, "create_publisher",
                           side_effect=[mock_pub, MagicMock(), MagicMock()]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
@@ -120,8 +127,7 @@ class TestPixhawkBridgeNode:
 
         mock_pub = MagicMock()
 
-        with patch("ibn_mavlink.pixhawk_bridge.node.get_logger", return_value=MagicMock()), \
-             patch.object(PixhawkTelemetry, "create_publisher",
+        with patch.object(PixhawkTelemetry, "create_publisher",
                           side_effect=[MagicMock(), mock_pub, MagicMock()]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
@@ -145,8 +151,7 @@ class TestPixhawkBridgeNode:
 
         mock_pub = MagicMock()
 
-        with patch("ibn_mavlink.pixhawk_bridge.node.get_logger", return_value=MagicMock()), \
-             patch.object(PixhawkTelemetry, "create_publisher",
+        with patch.object(PixhawkTelemetry, "create_publisher",
                           side_effect=[MagicMock(), MagicMock(), mock_pub]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
