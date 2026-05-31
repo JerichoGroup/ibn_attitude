@@ -76,7 +76,7 @@ class GPSInjectionNode(Node):
 
         if gps_payload is None:
             self._latest_payload = None
-            self.get_logger().warn("Invalid position, skipping")
+            self._logger.warning("Invalid position, skipping")
             return
 
         self._latest_payload = gps_payload

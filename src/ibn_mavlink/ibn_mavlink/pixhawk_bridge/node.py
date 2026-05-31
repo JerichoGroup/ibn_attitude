@@ -74,14 +74,13 @@ class PixhawkTelemetry(Node):
         global_position_msg = self._client.get_latest("GLOBAL_POSITION_INT")
         attitude_msg = self._client.get_latest("ATTITUDE")
 
-        if global_position_msg:
-            self._handle_global_position(global_position_msg)  # type: ignore[arg-type]
-
         if attitude_msg:
             ros_msg = MavlinkTranslator.to_attitude(self, attitude_msg)  # type: ignore[arg-type]
             self._pub_attitude.publish(ros_msg)
 
-        self._publish_init_position()
+        if global_position_msg:
+            self._handle_global_position(global_position_msg)  # type: ignore[arg-type]
+            self._publish_init_position()
 
 
     def _handle_global_position(self, msg: GlobalPositionMessage) -> None:
