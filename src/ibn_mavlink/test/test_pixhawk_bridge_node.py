@@ -8,6 +8,24 @@ from ibn_mavlink.pixhawk_bridge.node import PixhawkTelemetry
 class TestPixhawkBridgeNode:
     """Behavior tests for PixhawkTelemetry."""
 
+    @staticmethod
+    def _publisher_factory(global_pub, attitude_pub, init_pub):
+        """Return publisher mocks by topic name."""
+
+        def factory(_msg_type, topic, _qos):
+            if topic == "/pixhawk/global_position":
+                return global_pub
+
+            if topic == "/pixhawk/attitude":
+                return attitude_pub
+
+            if topic == "/pixhawk/init_position":
+                return init_pub
+
+            return MagicMock()
+
+        return factory
+
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
     def test_manual_cleanup_stops_client(
@@ -16,7 +34,7 @@ class TestPixhawkBridgeNode:
         mock_logger,
         valid_pixhawk_config,
     ):
-        """destroy_node stops the MAVLink client."""
+        """destroy_node stops MAVLink client."""
 
         mock_logger.return_value = MagicMock()
 
@@ -47,7 +65,7 @@ class TestPixhawkBridgeNode:
         mock_logger,
         valid_pixhawk_config,
     ):
-        """Nothing is published when no MAVLink messages exist."""
+        """Nothing happens when no MAVLink messages exist."""
 
         mock_logger.return_value = MagicMock()
 
@@ -112,11 +130,11 @@ class TestPixhawkBridgeNode:
         with patch.object(
             PixhawkTelemetry,
             "create_publisher",
-            side_effect=[
+            side_effect=self._publisher_factory(
                 global_pub,
                 attitude_pub,
                 init_pub,
-            ],
+            ),
         ), patch.object(
             PixhawkTelemetry,
             "create_timer",
@@ -165,11 +183,11 @@ class TestPixhawkBridgeNode:
         with patch.object(
             PixhawkTelemetry,
             "create_publisher",
-            side_effect=[
+            side_effect=self._publisher_factory(
                 global_pub,
                 attitude_pub,
                 init_pub,
-            ],
+            ),
         ), patch.object(
             PixhawkTelemetry,
             "create_timer",
@@ -192,7 +210,7 @@ class TestPixhawkBridgeNode:
         mock_logger,
         valid_pixhawk_config,
     ):
-        """Initial position is published once."""
+        """Initial position is published exactly once."""
 
         mock_logger.return_value = MagicMock()
         mock_client_class.return_value = MagicMock()
@@ -204,11 +222,11 @@ class TestPixhawkBridgeNode:
         with patch.object(
             PixhawkTelemetry,
             "create_publisher",
-            side_effect=[
+            side_effect=self._publisher_factory(
                 global_pub,
                 attitude_pub,
                 init_pub,
-            ],
+            ),
         ), patch.object(
             PixhawkTelemetry,
             "create_timer",
