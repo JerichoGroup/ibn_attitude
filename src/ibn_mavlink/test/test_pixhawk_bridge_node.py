@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock, patch
 
 from ibn_mavlink.pixhawk_bridge.node import PixhawkTelemetry
-from ibn_mavlink.test.conftest import valid_pixhawk_config
 
 
 class TestPixhawkBridgeNode:
