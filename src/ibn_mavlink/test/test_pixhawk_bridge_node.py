@@ -2,8 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
-# Mock rosout publisher so ROS2 does NOT create the extra publisher
-patch("rclpy.logging._root_logger.create_publisher", return_value=MagicMock()).start()
+# Prevent ROS2 from creating the rosout publisher
+patch("rclpy.node.Node.create_publisher", return_value=MagicMock()).start()
 
 from ibn_mavlink.pixhawk_bridge.node import PixhawkTelemetry
 
