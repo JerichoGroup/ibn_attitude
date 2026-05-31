@@ -32,6 +32,7 @@ class TestPixhawkBridgeNode:
 
         mock_client.stop.assert_called_once()
 
+
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MavlinkTranslator")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
@@ -48,7 +49,9 @@ class TestPixhawkBridgeNode:
         mock_client.get_latest.return_value = None
         mock_client_class.return_value = mock_client
 
-        with patch.object(PixhawkTelemetry, "create_publisher", side_effect=[MagicMock(), MagicMock(), MagicMock()]), \
+        with patch("rclpy.logging._logger.RclpyLogger"), \
+             patch.object(PixhawkTelemetry, "create_publisher",
+                        side_effect=[MagicMock(), MagicMock(), MagicMock()]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
             node = PixhawkTelemetry(valid_pixhawk_config)
@@ -72,7 +75,9 @@ class TestPixhawkBridgeNode:
         mock_logger.return_value = MagicMock()
 
         mock_client = MagicMock()
-        mock_client.get_latest.side_effect = lambda t: sample_global_position_msg if t == "GLOBAL_POSITION_INT" else None
+        mock_client.get_latest.side_effect = (
+            lambda t: sample_global_position_msg if t == "GLOBAL_POSITION_INT" else None
+        )
         mock_client_class.return_value = mock_client
 
         mock_ros_msg = MagicMock()
@@ -80,7 +85,9 @@ class TestPixhawkBridgeNode:
 
         mock_pub = MagicMock()
 
-        with patch.object(PixhawkTelemetry, "create_publisher", return_value=mock_pub), \
+        with patch("rclpy.logging._logger.RclpyLogger"), \
+             patch.object(PixhawkTelemetry, "create_publisher",
+                        side_effect=[mock_pub, MagicMock(), MagicMock()]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
             node = PixhawkTelemetry(valid_pixhawk_config)
@@ -104,7 +111,9 @@ class TestPixhawkBridgeNode:
         mock_logger.return_value = MagicMock()
 
         mock_client = MagicMock()
-        mock_client.get_latest.side_effect = lambda t: sample_attitude_msg if t == "ATTITUDE" else None
+        mock_client.get_latest.side_effect = (
+            lambda t: sample_attitude_msg if t == "ATTITUDE" else None
+        )
         mock_client_class.return_value = mock_client
 
         mock_ros_msg = MagicMock()
@@ -112,7 +121,9 @@ class TestPixhawkBridgeNode:
 
         mock_pub = MagicMock()
 
-        with patch.object(PixhawkTelemetry, "create_publisher", return_value=mock_pub), \
+        with patch("rclpy.logging._logger.RclpyLogger"), \
+             patch.object(PixhawkTelemetry, "create_publisher",
+                        side_effect=[MagicMock(), mock_pub, MagicMock()]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
             node = PixhawkTelemetry(valid_pixhawk_config)
@@ -135,7 +146,9 @@ class TestPixhawkBridgeNode:
 
         mock_pub = MagicMock()
 
-        with patch.object(PixhawkTelemetry, "create_publisher", return_value=mock_pub), \
+        with patch("rclpy.logging._logger.RclpyLogger"), \
+             patch.object(PixhawkTelemetry, "create_publisher",
+                        side_effect=[MagicMock(), MagicMock(), mock_pub]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
             node = PixhawkTelemetry(valid_pixhawk_config)

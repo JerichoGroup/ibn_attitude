@@ -12,7 +12,7 @@ class TestGPSInjectionNode:
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
     def test_callback_stores_payload(self, mock_client, valid_gps_injection_config):
         """Test that callback properly converts and stores latest GPSInputPayload."""
-        
+
         node = GPSInjectionNode(valid_gps_injection_config)
 
         payload = GPSInputPayload(
@@ -98,6 +98,8 @@ class TestGPSInjectionNode:
 
         node = GPSInjectionNode(valid_gps_injection_config)
 
+        client = node._client
+
         node.destroy_node()
 
-        mock_client_instance.stop.assert_called_once()
+        client.stop.assert_called_once()
