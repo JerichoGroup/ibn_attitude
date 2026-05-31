@@ -48,9 +48,9 @@ class TestPixhawkBridgeNode:
         mock_client.get_latest.return_value = None
         mock_client_class.return_value = mock_client
 
-        with patch.object(PixhawkTelemetry, "get_logger", return_value=MagicMock()), \
+        with patch("rclpy.logging.get_logger", return_value=MagicMock()), \
              patch.object(PixhawkTelemetry, "create_publisher",
-                        side_effect=[MagicMock(), MagicMock(), MagicMock()]), \
+                          side_effect=[MagicMock(), MagicMock(), MagicMock()]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
             node = PixhawkTelemetry(valid_pixhawk_config)
@@ -84,9 +84,9 @@ class TestPixhawkBridgeNode:
 
         mock_pub = MagicMock()
 
-        with patch.object(PixhawkTelemetry, "get_logger", return_value=MagicMock()), \
+        with patch("rclpy.logging.get_logger", return_value=MagicMock()), \
              patch.object(PixhawkTelemetry, "create_publisher",
-                        side_effect=[mock_pub, MagicMock(), MagicMock()]), \
+                          side_effect=[mock_pub, MagicMock(), MagicMock()]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
             node = PixhawkTelemetry(valid_pixhawk_config)
@@ -120,9 +120,9 @@ class TestPixhawkBridgeNode:
 
         mock_pub = MagicMock()
 
-        with patch.object(PixhawkTelemetry, "get_logger", return_value=MagicMock()), \
+        with patch("rclpy.logging.get_logger", return_value=MagicMock()), \
              patch.object(PixhawkTelemetry, "create_publisher",
-                        side_effect=[MagicMock(), mock_pub, MagicMock()]), \
+                          side_effect=[MagicMock(), mock_pub, MagicMock()]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
             node = PixhawkTelemetry(valid_pixhawk_config)
@@ -145,9 +145,9 @@ class TestPixhawkBridgeNode:
 
         mock_pub = MagicMock()
 
-        with patch.object(PixhawkTelemetry, "get_logger", return_value=MagicMock()), \
+        with patch("rclpy.logging.get_logger", return_value=MagicMock()), \
              patch.object(PixhawkTelemetry, "create_publisher",
-                        side_effect=[MagicMock(), MagicMock(), mock_pub]), \
+                          side_effect=[MagicMock(), MagicMock(), mock_pub]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
             node = PixhawkTelemetry(valid_pixhawk_config)
