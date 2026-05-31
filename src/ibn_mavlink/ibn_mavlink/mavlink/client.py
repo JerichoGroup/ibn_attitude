@@ -57,6 +57,7 @@ class MAVLinkClient:
 
         self._connect()
 
+        self._thread = None
         if self._read_enabled:
             self._thread = threading.Thread(
                 target=self._read_loop,
@@ -215,6 +216,7 @@ class MAVLinkClient:
 
         time_us = int(time.time() * 1e6)
 
+        # velocity intentionally unused because EKF ignores it
         ignore_flags = IGNORE_VEL_XY | IGNORE_VEL_Z
 
         with self._conn_lock:

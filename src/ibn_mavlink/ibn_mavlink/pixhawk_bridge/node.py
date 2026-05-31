@@ -99,7 +99,7 @@ class PixhawkTelemetry(Node):
     def _publish_init_position(self) -> None:
         if self._init_position and not self._init_published:
             self._pub_init.publish(self._init_position)
-
+            self._init_published = True
 
 def main() -> None:
     """Entry point."""

@@ -45,13 +45,16 @@ class GPSInjectionNode(Node):
             read_enabled=False,
             logger=self._logger,
         )
-
-        self._subscription = self.create_subscription(
-            IBNResult,
-            ros["ibn_result_topic"],
-            self._callback,
-            10,
-        )
+        
+        try:
+            self._subscription = self.create_subscription(
+                IBNResult,
+                ros["ibn_result_topic"],
+                self._callback,
+                10,
+            )
+        except Exception:
+            self._subscription = None
 
         self._inject_rate_hz = ros.get("inject_rate_hz", 10)
         self._inject_timer = self.create_timer(
