@@ -2,16 +2,10 @@
 
 from unittest.mock import MagicMock, patch
 
-# IMPORTANT:
-# We patch the logger BEFORE importing PixhawkTelemetry,
-# because ROS2 creates the rosout publisher during Node.__init__ at import time.
+# Mock rosout publisher so ROS2 does NOT create the extra publisher
+patch("rclpy.logging._root_logger.create_publisher", return_value=MagicMock()).start()
 
-@patch("ibn_mavlink.pixhawk_bridge.node.rclpy.logging.get_logger", return_value=MagicMock())
-def import_pixhawk_telemetry(mock_logger):
-    from ibn_mavlink.pixhawk_bridge.node import PixhawkTelemetry
-    return PixhawkTelemetry
-
-PixhawkTelemetry = import_pixhawk_telemetry()  # load with patched logger
+from ibn_mavlink.pixhawk_bridge.node import PixhawkTelemetry
 
 
 class TestPixhawkBridgeNode:
