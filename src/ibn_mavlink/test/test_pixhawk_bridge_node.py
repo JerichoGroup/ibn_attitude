@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 from ibn_mavlink.pixhawk_bridge.node import PixhawkTelemetry
+from ibn_mavlink.test.conftest import valid_pixhawk_config
 
 
 class TestPixhawkBridgeNode:
@@ -25,11 +26,11 @@ class TestPixhawkBridgeNode:
              patch("rclpy.node.Node.destroy_node"):
 
             node = PixhawkTelemetry(valid_pixhawk_config)
+            node._client = mock_client
 
             node.destroy_node()
 
         mock_client.stop.assert_called_once()
-
 
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MavlinkTranslator")
@@ -79,7 +80,7 @@ class TestPixhawkBridgeNode:
 
         mock_pub = MagicMock()
 
-        with patch.object(PixhawkTelemetry, "create_publisher", side_effect=[mock_pub, MagicMock(), MagicMock()]), \
+        with patch.object(PixhawkTelemetry, "create_publisher", return_value=mock_pub), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
             node = PixhawkTelemetry(valid_pixhawk_config)
@@ -111,7 +112,7 @@ class TestPixhawkBridgeNode:
 
         mock_pub = MagicMock()
 
-        with patch.object(PixhawkTelemetry, "create_publisher", side_effect=[MagicMock(), mock_pub, MagicMock()]), \
+        with patch.object(PixhawkTelemetry, "create_publisher", return_value=mock_pub), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
             node = PixhawkTelemetry(valid_pixhawk_config)
@@ -134,7 +135,7 @@ class TestPixhawkBridgeNode:
 
         mock_pub = MagicMock()
 
-        with patch.object(PixhawkTelemetry, "create_publisher", side_effect=[MagicMock(), MagicMock(), mock_pub]), \
+        with patch.object(PixhawkTelemetry, "create_publisher", return_value=mock_pub), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
             node = PixhawkTelemetry(valid_pixhawk_config)

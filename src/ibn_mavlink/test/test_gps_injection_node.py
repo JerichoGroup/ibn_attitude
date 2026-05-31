@@ -11,6 +11,8 @@ class TestGPSInjectionNode:
 
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
     def test_callback_stores_payload(self, mock_client, valid_gps_injection_config):
+        """Test that callback properly converts and stores latest GPSInputPayload."""
+        
         node = GPSInjectionNode(valid_gps_injection_config)
 
         payload = GPSInputPayload(
@@ -34,6 +36,8 @@ class TestGPSInjectionNode:
 
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
     def test_callback_invalid_ignored(self, mock_client, valid_gps_injection_config):
+        """Test that callback sets _latest_payload to None when converter returns None."""
+
         node = GPSInjectionNode(valid_gps_injection_config)
 
         msg = MagicMock()
@@ -49,6 +53,8 @@ class TestGPSInjectionNode:
 
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
     def test_inject_loop_no_payload(self, mock_client, valid_gps_injection_config):
+        """Test that _inject_loop does nothing when no valid payload is available."""
+
         node = GPSInjectionNode(valid_gps_injection_config)
 
         node._inject_loop()
@@ -58,6 +64,8 @@ class TestGPSInjectionNode:
 
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
     def test_inject_loop_sends_gps(self, mock_client, valid_gps_injection_config):
+        """Test that _inject_loop sends GPSInputParams with correct values."""
+
         node = GPSInjectionNode(valid_gps_injection_config)
 
         node._latest_payload = GPSInputPayload(
@@ -83,8 +91,13 @@ class TestGPSInjectionNode:
 
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
     def test_destroy_node_stops_client(self, mock_client, valid_gps_injection_config):
+        """Test that destroy_node properly stops the MAVLink client."""
+
+        mock_client_instance = MagicMock()
+        mock_client.return_value = mock_client_instance
+
         node = GPSInjectionNode(valid_gps_injection_config)
 
         node.destroy_node()
 
-        node._client.stop.assert_called_once()
+        mock_client_instance.stop.assert_called_once()
