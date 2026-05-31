@@ -107,7 +107,7 @@ def sample_attitude_msg():
 # -----------------------------
 
 @pytest.fixture
-def valid_config():
+def valid_pixhawk_config():
     return {
         "mavlink": {
             "connection_string": "/dev/ttyACM0",
@@ -119,6 +119,9 @@ def valid_config():
             "attitude_topic": "/pixhawk/attitude",
             "init_position_topic": "/pixhawk/init_position",
             "publish_rate_hz": 10,
+        },
+        "log": {
+            "file_path": "/tmp/test.log",
         },
     }
 

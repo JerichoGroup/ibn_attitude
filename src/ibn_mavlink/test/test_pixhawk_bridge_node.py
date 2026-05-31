@@ -14,7 +14,7 @@ class TestPixhawkBridgeNode:
         self,
         mock_client_class,
         mock_logger,
-        valid_config,
+        valid_pixhawk_config,
     ):
         mock_logger.return_value = MagicMock()
         mock_client = MagicMock()
@@ -24,7 +24,7 @@ class TestPixhawkBridgeNode:
              patch.object(PixhawkTelemetry, "create_timer"), \
              patch("rclpy.node.Node.destroy_node"):
 
-            node = PixhawkTelemetry(valid_config)
+            node = PixhawkTelemetry(valid_pixhawk_config)
 
             node.destroy_node()
 
@@ -39,7 +39,7 @@ class TestPixhawkBridgeNode:
         mock_client_class,
         mock_translator,
         mock_logger,
-        valid_config,
+        valid_pixhawk_config,
     ):
         mock_logger.return_value = MagicMock()
 
@@ -50,7 +50,7 @@ class TestPixhawkBridgeNode:
         with patch.object(PixhawkTelemetry, "create_publisher", side_effect=[MagicMock(), MagicMock(), MagicMock()]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
-            node = PixhawkTelemetry(valid_config)
+            node = PixhawkTelemetry(valid_pixhawk_config)
             node._tick()
 
         mock_translator.to_global_position.assert_not_called()
@@ -65,7 +65,7 @@ class TestPixhawkBridgeNode:
         mock_client_class,
         mock_translator,
         mock_logger,
-        valid_config,
+        valid_pixhawk_config,
         sample_global_position_msg,
     ):
         mock_logger.return_value = MagicMock()
@@ -82,7 +82,7 @@ class TestPixhawkBridgeNode:
         with patch.object(PixhawkTelemetry, "create_publisher", side_effect=[mock_pub, MagicMock(), MagicMock()]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
-            node = PixhawkTelemetry(valid_config)
+            node = PixhawkTelemetry(valid_pixhawk_config)
             node._tick()
 
         mock_translator.to_global_position.assert_called_once()
@@ -97,7 +97,7 @@ class TestPixhawkBridgeNode:
         mock_client_class,
         mock_translator,
         mock_logger,
-        valid_config,
+        valid_pixhawk_config,
         sample_attitude_msg,
     ):
         mock_logger.return_value = MagicMock()
@@ -114,7 +114,7 @@ class TestPixhawkBridgeNode:
         with patch.object(PixhawkTelemetry, "create_publisher", side_effect=[MagicMock(), mock_pub, MagicMock()]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
-            node = PixhawkTelemetry(valid_config)
+            node = PixhawkTelemetry(valid_pixhawk_config)
             node._tick()
 
         mock_translator.to_attitude.assert_called_once()
@@ -127,7 +127,7 @@ class TestPixhawkBridgeNode:
         self,
         mock_client_class,
         mock_logger,
-        valid_config,
+        valid_pixhawk_config,
     ):
         mock_logger.return_value = MagicMock()
         mock_client_class.return_value = MagicMock()
@@ -137,7 +137,7 @@ class TestPixhawkBridgeNode:
         with patch.object(PixhawkTelemetry, "create_publisher", side_effect=[MagicMock(), MagicMock(), mock_pub]), \
              patch.object(PixhawkTelemetry, "create_timer"):
 
-            node = PixhawkTelemetry(valid_config)
+            node = PixhawkTelemetry(valid_pixhawk_config)
 
             node._init_position = MagicMock()
             node._publish_init_position()
