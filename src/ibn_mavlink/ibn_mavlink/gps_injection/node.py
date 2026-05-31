@@ -45,7 +45,7 @@ class GPSInjectionNode(Node):
             read_enabled=False,
             logger=self._logger,
         )
-        
+
         try:
             self._subscription = self.create_subscription(
                 IBNResult,
@@ -111,6 +111,19 @@ class GPSInjectionNode(Node):
             self._logger.error(f"Failed to inject GPS: {e}")
 
 
+    def destroy_node(self) -> None:
+        """
+        Shut down external resources owned by the node.
+        Ensures MAVLink client is stopped before the ROS2 node is destroyed.
+        """
+        
+        if getattr(self, "_client", None) is not None:
+            self._client.stop()
+            self._client = None
+
+        super().destroy_node()
+
+
 def main(args: Optional[list] = None) -> None:
     ros_init_if_needed()
 
@@ -122,7 +135,6 @@ def main(args: Optional[list] = None) -> None:
     try:
         rclpy.spin(node)
     finally:
-        node._client.stop()
         node.destroy_node()
         rclpy.shutdown()
 

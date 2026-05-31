@@ -97,9 +97,24 @@ class PixhawkTelemetry(Node):
 
 
     def _publish_init_position(self) -> None:
+        """Publish initial position if not already published."""
+        
         if self._init_position and not self._init_published:
             self._pub_init.publish(self._init_position)
             self._init_published = True
+
+
+    def destroy_node(self) -> None:
+        """
+        Cleanly shut down external resources owned by the node.
+        Ensures MAVLink client is stopped before the ROS2 node is destroyed.
+        """
+        
+        if getattr(self, "_client", None) is not None:
+            self._client.stop()
+            self._client = None
+
+        super().destroy_node()
 
 
 def main() -> None:
@@ -116,7 +131,6 @@ def main() -> None:
     try:
         rclpy.spin(node)
     finally:
-        node._client.stop()
         node.destroy_node()
         rclpy.shutdown()
 
