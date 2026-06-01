@@ -26,6 +26,7 @@ class TestPixhawkBridgeNode:
 
         return factory
 
+
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
     def test_manual_cleanup_stops_client(
@@ -56,6 +57,7 @@ class TestPixhawkBridgeNode:
             node.destroy_node()
 
         mock_client.stop.assert_called_once()
+
 
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
@@ -93,6 +95,7 @@ class TestPixhawkBridgeNode:
 
         mock_handle.assert_not_called()
         mock_publish_init.assert_not_called()
+
 
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
@@ -147,11 +150,10 @@ class TestPixhawkBridgeNode:
         global_pub.publish.assert_called_once_with(ros_msg)
         init_pub.publish.assert_called_once_with(ros_msg)
 
+
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
-    @patch(
-        "ibn_mavlink.pixhawk_bridge.node.MavlinkTranslator.to_attitude"
-    )
+    @patch("ibn_mavlink.pixhawk_bridge.node.MavlinkTranslator.to_attitude")
     def test_tick_attitude_flow(
         self,
         mock_to_attitude,
@@ -202,6 +204,7 @@ class TestPixhawkBridgeNode:
         )
         attitude_pub.publish.assert_called_once_with(ros_msg)
 
+
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
     def test_publish_init_position(
@@ -210,7 +213,7 @@ class TestPixhawkBridgeNode:
         mock_logger,
         valid_pixhawk_config,
     ):
-        """Initial position is published exactly once."""
+        """Initial position is published when available."""
 
         mock_logger.return_value = MagicMock()
         mock_client_class.return_value = MagicMock()
@@ -240,4 +243,42 @@ class TestPixhawkBridgeNode:
             node._publish_init_position()
 
         init_pub.publish.assert_called_once_with(init_position)
-        assert node._init_published is True
+
+
+    @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
+    @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
+    def test_publish_init_position_no_position(
+        self,
+        mock_client_class,
+        mock_logger,
+        valid_pixhawk_config,
+    ):
+        """Nothing is published when init position is unavailable."""
+
+        mock_logger.return_value = MagicMock()
+        mock_client_class.return_value = MagicMock()
+
+        global_pub = MagicMock()
+        attitude_pub = MagicMock()
+        init_pub = MagicMock()
+
+        with patch.object(
+            PixhawkTelemetry,
+            "create_publisher",
+            side_effect=self._publisher_factory(
+                global_pub,
+                attitude_pub,
+                init_pub,
+            ),
+        ), patch.object(
+            PixhawkTelemetry,
+            "create_timer",
+        ):
+
+            node = PixhawkTelemetry(valid_pixhawk_config)
+
+            node._init_position = None
+
+            node._publish_init_position()
+
+        init_pub.publish.assert_not_called()
