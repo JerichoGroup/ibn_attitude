@@ -10,15 +10,12 @@ This document describes the test strategy for ibn_attitude ROS 2 package.
 src/ibn_mavlink/
 └── test/
     ├── __init__.py
-    ├── test_client.py           # MAVLinkClient tests
-    ├── test_converter.py        # IBNToGPSConverter tests
-    ├── test_translator.py       # MavlinkTranslator tests
-    ├── test_gps_injection_node.py
-    ├── test_pixhawk_bridge_node.py
-    ├── conftest.py              # Shared fixtures
-    └── resources/
-        ├── valid_config.yaml
-        └── invalid_config.yaml
+    ├── test_client.py                  # MAVLinkClient tests
+    ├── test_converter.py               # IBNToGPSConverter tests
+    ├── test_translator.py              # MavlinkTranslator tests
+    ├── test_gps_injection_node.py      # GPSInjectionNode tests
+    ├── test_pixhawk_bridge_node.py     # PixhawkTelemetry tests
+    └── conftest.py                     # Shared fixtures
 ```
 
 ## Modules to Test
@@ -85,10 +82,8 @@ src/ibn_mavlink/
 ```bash
 # Inside container
 cd /root/dev/src
-python3 -m pytest ibn_attitude/src/ibn_mavlink/test -v
 
-# Or via colcon
-colcon test --packages-select ibn_mavlink
+python3 -m pytest ibn_attitude/src/ibn_mavlink/test -v
 ```
 
 ## Framework
