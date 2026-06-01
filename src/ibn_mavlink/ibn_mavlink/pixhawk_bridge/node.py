@@ -57,7 +57,6 @@ class PixhawkTelemetry(Node):
         )
 
         self._init_position: Optional[GlobalPositionInt] = None
-        self._init_published = False
 
         publish_hz = ros_config["publish_rate_hz"]
         self.create_timer(1.0 / publish_hz, self._tick)
@@ -98,9 +97,8 @@ class PixhawkTelemetry(Node):
     def _publish_init_position(self) -> None:
         """Publish initial position if not already published."""
         
-        if self._init_position is not None and not self._init_published:
+        if self._init_position is not None:
             self._pub_init.publish(self._init_position)
-            self._init_published = True
 
 
     def destroy_node(self) -> None:
