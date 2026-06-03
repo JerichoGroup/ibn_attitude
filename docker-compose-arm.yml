@@ -19,6 +19,7 @@ services:
     environment:
       - DISPLAY=${DISPLAY}
       - QT_X11_NO_MITSHM=1
+      - ROS_DOMAIN_ID=42
 
     stdin_open: true
     tty: true
@@ -35,6 +36,9 @@ services:
     tty: true
     restart: unless-stopped
 
+    environment:
+      - ROS_DOMAIN_ID=42
+      
     volumes:
       - /dev:/dev
 
