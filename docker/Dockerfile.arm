@@ -93,7 +93,7 @@ COPY --from=build / /
 
 WORKDIR /root/dev/
 
-COPY docker/entrypoint_arm.sh /entrypoint_arm.sh
-RUN chmod +x /entrypoint_arm.sh
+COPY docker/entrypoint_*.sh /
+RUN chmod +x /entrypoint_*.sh
 
 CMD ["bash"]
