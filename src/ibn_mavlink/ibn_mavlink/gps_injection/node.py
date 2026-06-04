@@ -19,7 +19,7 @@ def load_config(path: Path) -> dict:
         return yaml.safe_load(config_file)
 
 
-def ros_init_if_needed() -> None:
+def ensure_ros_initialized() -> None:
     if not rclpy.ok():
         rclpy.init()
 
@@ -28,7 +28,7 @@ class GPSInjectionNode(Node):
     """Injects computed GPS position back to Pixhawk."""
 
     def __init__(self, config: Dict[str, Any]) -> None:
-        ros_init_if_needed()
+        ensure_ros_initialized()
 
         super().__init__("gps_injection_node")
 
@@ -125,7 +125,7 @@ class GPSInjectionNode(Node):
 
 
 def main(args: Optional[list] = None) -> None:
-    ros_init_if_needed()
+    ensure_ros_initialized()
 
     config_dir = get_package_share_directory("ibn_mavlink")
     config_path = Path(config_dir) / "config" / "gps_injection.yaml"
