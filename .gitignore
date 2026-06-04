@@ -215,3 +215,6 @@ log/
 docker/Dockerfile
 docker-compose.yml
 docker-compose-pituah.yml
+
+#logs
+logs/
