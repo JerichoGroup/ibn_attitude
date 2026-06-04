@@ -210,3 +210,8 @@ __marimo__/
 #ros2 pkg
 install/
 log/
+
+#docker-compose and local docker files
+docker/Dockerfile
+docker-compose.yml
+docker-compose-pituah.yml
