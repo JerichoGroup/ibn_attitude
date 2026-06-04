@@ -95,7 +95,7 @@ class PixhawkTelemetry(Node):
 
 
     def _publish_init_position(self) -> None:
-        """Publish initial position if not already published."""
+        """Publish initial position on every tick after the first position is received"""
         
         if self._init_position is not None:
             self._pub_init.publish(self._init_position)
