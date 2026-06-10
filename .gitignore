@@ -211,11 +211,6 @@ __marimo__/
 install/
 log/
 
-#docker-compose and local docker files
-docker/Dockerfile
-docker/entrypoint.sh
-docker-compose.yml
-docker-compose-pituah.yml
 
 #logs
 logs/
