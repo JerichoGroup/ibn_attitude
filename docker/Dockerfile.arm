@@ -16,7 +16,7 @@ WORKDIR /tmp
 # Locale
 RUN locale-gen en_US en_US.UTF-8 && \
 	update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
-	
+
 ENV LANG=en_US.UTF-8
 
 # Clean broken ROS apt sources
@@ -79,7 +79,7 @@ RUN source /opt/ros/${ROS_DISTRO}/install/setup.bash && \
     colcon build
 
 
-# Runtime image 
+# Runtime image
 FROM nvcr.io/nvidia/l4t-base:r32.4.4
 
 ENV DEBIAN_FRONTEND=noninteractive \

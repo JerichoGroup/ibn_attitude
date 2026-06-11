@@ -427,6 +427,7 @@ class TestMAVLinkClientStop:
 
         client.stop()
 
+        assert client._thread is not None
         assert not client._thread.is_alive()
 
     @patch("ibn_mavlink.mavlink.client.mavutil")
@@ -452,9 +453,7 @@ class TestMAVLinkClientStop:
         mock_master.target_system = 1
         mock_master.target_component = 1
         mock_master.wait_heartbeat.return_value = True
-        mock_master.recv_match.side_effect = Exception(
-            "Connection lost"
-        )
+        mock_master.recv_match.side_effect = Exception("Connection lost")
         mock_mavutil.mavlink_connection.return_value = mock_master
         mock_mavutil.mavlink.MAV_DATA_STREAM_ALL = 0
 

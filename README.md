@@ -80,8 +80,8 @@ The system uses two YAML configuration files located in:
 
 src/ibn_attitude/config/
 
-- gps_injection.yaml → controls GPS/IBN injection behavior  
-- pixhawk_bridge.yaml → controls MAVLink ↔ ROS2 bridge settings  
+- gps_injection.yaml → controls GPS/IBN injection behavior
+- pixhawk_bridge.yaml → controls MAVLink ↔ ROS2 bridge settings
 
 ---
 
@@ -102,15 +102,15 @@ log:
 
 ROS:
 
-- ibn_result_topic  
+- ibn_result_topic
   ROS2 topic where processed IBN results are published.
 
-- inject_rate_hz  
+- inject_rate_hz
   Frequency (Hz) at which GPS/IBN injection runs.
 
 Log:
 
-- file_path  
+- file_path
   Path where injection logs are saved.
 
 ---
@@ -135,24 +135,24 @@ ros:
 
 MAVLink:
 
-- connection_string  
+- connection_string
   Endpoint for connecting to Pixhawk or SITL (UDP/TCP/serial).
 
-- baud_rate  
+- baud_rate
   Serial communication speed.
 
-- stream_rate_hz  
+- stream_rate_hz
   MAVLink stream request rate. Set to 0 to disable automatic stream requests.
 
 ROS:
 
-- attitude_topic_name  
+- attitude_topic_name
   ROS2 topic for vehicle attitude data.
 
-- altitude_topic_name  
+- altitude_topic_name
   ROS2 topic for altitude data.
 
-- hz  
+- hz
   Update frequency for the bridge node.
 ---
 

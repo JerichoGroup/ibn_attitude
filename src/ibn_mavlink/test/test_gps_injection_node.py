@@ -33,7 +33,6 @@ class TestGPSInjectionNode:
 
         assert node._latest_payload == payload
 
-
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
     def test_callback_invalid_ignored(self, mock_client, valid_gps_injection_config):
         """Test that callback sets _latest_payload to None when converter returns None."""
@@ -50,7 +49,6 @@ class TestGPSInjectionNode:
 
         assert node._latest_payload is None
 
-
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
     def test_inject_loop_no_payload(self, mock_client, valid_gps_injection_config):
         """Test that _inject_loop does nothing when no valid payload is available."""
@@ -60,7 +58,6 @@ class TestGPSInjectionNode:
         node._inject_loop()
 
         node._client.send_gps_input.assert_not_called()
-
 
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
     def test_inject_loop_sends_gps(self, mock_client, valid_gps_injection_config):
@@ -87,7 +84,6 @@ class TestGPSInjectionNode:
         assert sent.alt == 100.0
         assert sent.hdop == 1.5
         assert sent.satellites == 10
-
 
     @patch("ibn_mavlink.gps_injection.node.MAVLinkClient")
     def test_destroy_node_stops_client(self, mock_client, valid_gps_injection_config):

@@ -8,13 +8,14 @@ from typing import Any, Dict, Optional
 
 from pymavlink import mavutil
 
-
 IGNORE_VEL_XY = 1 << 3
 IGNORE_VEL_Z = 1 << 4
 
 
 @dataclass
 class GPSInputParams:
+    """Parameters for a MAVLink GPS_INPUT message."""
+
     lat: float
     lon: float
     alt: float
@@ -28,7 +29,7 @@ class GPSInputParams:
 class MAVLinkClient:
     """MAVLink client for Pixhawk communication."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - all connection parameters are required at construction
         self,
         conn_str: str,
         baud: int,
@@ -37,6 +38,7 @@ class MAVLinkClient:
         logger: Optional[logging.Logger] = None,
         recv_timeout: float = 0.05,
     ) -> None:
+        """Open a MAVLink connection and, if reading is enabled, start the read thread."""
 
         self._logger = logger or logging.getLogger("MAVLinkClient")
 
@@ -65,7 +67,6 @@ class MAVLinkClient:
             )
             self._thread.start()
 
-
     def _connect(self) -> None:
         """Establish MAVLink connection."""
 
@@ -93,7 +94,6 @@ class MAVLinkClient:
 
         self._request_streams()
 
-
     def _request_streams(self) -> None:
         """Request MAVLink data streams at specified rate."""
 
@@ -113,7 +113,6 @@ class MAVLinkClient:
                 self._rate,
                 1,
             )
-
 
     def _read_loop(self) -> None:
         """Continuously read MAVLink messages."""
@@ -141,7 +140,6 @@ class MAVLinkClient:
                 self._reconnect()
                 time.sleep(0.5)
 
-
     def _disconnect(self) -> None:
         """Close existing MAVLink connection safely."""
 
@@ -155,7 +153,6 @@ class MAVLinkClient:
             except Exception:
                 pass
 
-
     def _attempt_connect(self) -> bool:
         """Try a single reconnect attempt."""
 
@@ -166,7 +163,6 @@ class MAVLinkClient:
         except Exception as e:
             self._logger.error(f"Reconnect attempt failed: {e}")
             return False
-
 
     def _reconnect(self) -> None:
         """Reconnect loop with backoff."""
@@ -189,13 +185,11 @@ class MAVLinkClient:
         finally:
             self._reconnect_lock.release()
 
-
-    def get_latest(self, msg_type: str) -> Optional[Any]:
+    def get_latest(self, msg_type: str) -> Optional[Any]:  # noqa: ANN401 - pymavlink messages are dynamically typed and unstubbed
         """Get latest message of specified type."""
 
         with self._lock:
             return self._latest.get(msg_type)
-
 
     def stop(self) -> None:
         """Stop the client and clean up resources."""
@@ -204,9 +198,8 @@ class MAVLinkClient:
 
         self._disconnect()
 
-        if hasattr(self, "_thread"):
+        if self._thread is not None:
             self._thread.join(timeout=2)
-
 
     def send_gps_input(self, params: GPSInputParams) -> None:
         """Send GPS_INPUT message to Pixhawk."""
@@ -228,22 +221,22 @@ class MAVLinkClient:
 
             master.mav.gps_input_send(
                 time_us,
-                0,                      # gps_id
-                ignore_flags,           # ignore flags - we only provide position
-                0,                      # time_week_ms
-                0,                      # time_week
-                3,                      # fix_type (3D)
+                0,  # gps_id
+                ignore_flags,  # ignore flags - we only provide position
+                0,  # time_week_ms
+                0,  # time_week
+                3,  # fix_type (3D)
                 lat_int,
                 lon_int,
-                params.alt,             # meters
-                params.hdop,            # hdop
-                params.hdop,            # vdop
-                params.vn,              # m/s
+                params.alt,  # meters
+                params.hdop,  # hdop
+                params.hdop,  # vdop
+                params.vn,  # m/s
                 params.ve,
                 params.vd,
-                0.1,                    # speed_accuracy
-                params.hdop,            # horiz_accuracy
-                params.hdop,            # vert_accuracy
+                0.1,  # speed_accuracy
+                params.hdop,  # horiz_accuracy
+                params.hdop,  # vert_accuracy
                 params.satellites,
-                0,                      # yaw unavailable
+                0,  # yaw unavailable
             )

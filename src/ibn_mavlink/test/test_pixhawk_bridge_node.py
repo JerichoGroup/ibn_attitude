@@ -26,7 +26,6 @@ class TestPixhawkBridgeNode:
 
         return factory
 
-
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
     def test_manual_cleanup_stops_client(
@@ -42,22 +41,22 @@ class TestPixhawkBridgeNode:
         mock_client = MagicMock()
         mock_client_class.return_value = mock_client
 
-        with patch.object(
-            PixhawkTelemetry,
-            "create_publisher",
-            return_value=MagicMock(),
-        ), patch.object(
-            PixhawkTelemetry,
-            "create_timer",
-        ), patch(
-            "rclpy.node.Node.destroy_node"
+        with (
+            patch.object(
+                PixhawkTelemetry,
+                "create_publisher",
+                return_value=MagicMock(),
+            ),
+            patch.object(
+                PixhawkTelemetry,
+                "create_timer",
+            ),
+            patch("rclpy.node.Node.destroy_node"),
         ):
-
             node = PixhawkTelemetry(valid_pixhawk_config)
             node.destroy_node()
 
         mock_client.stop.assert_called_once()
-
 
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
@@ -75,33 +74,34 @@ class TestPixhawkBridgeNode:
         mock_client.get_latest.return_value = None
         mock_client_class.return_value = mock_client
 
-        with patch.object(
-            PixhawkTelemetry,
-            "create_publisher",
-            return_value=MagicMock(),
-        ), patch.object(
-            PixhawkTelemetry,
-            "create_timer",
-        ), patch.object(
-            PixhawkTelemetry,
-            "_handle_global_position",
-        ) as mock_handle, patch.object(
-            PixhawkTelemetry,
-            "_publish_init_position",
-        ) as mock_publish_init:
-
+        with (
+            patch.object(
+                PixhawkTelemetry,
+                "create_publisher",
+                return_value=MagicMock(),
+            ),
+            patch.object(
+                PixhawkTelemetry,
+                "create_timer",
+            ),
+            patch.object(
+                PixhawkTelemetry,
+                "_handle_global_position",
+            ) as mock_handle,
+            patch.object(
+                PixhawkTelemetry,
+                "_publish_init_position",
+            ) as mock_publish_init,
+        ):
             node = PixhawkTelemetry(valid_pixhawk_config)
             node._tick()
 
         mock_handle.assert_not_called()
         mock_publish_init.assert_not_called()
 
-
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
-    @patch(
-        "ibn_mavlink.pixhawk_bridge.node.MavlinkTranslator.to_global_position"
-    )
+    @patch("ibn_mavlink.pixhawk_bridge.node.MavlinkTranslator.to_global_position")
     def test_tick_global_position_flow(
         self,
         mock_to_global_position,
@@ -116,10 +116,7 @@ class TestPixhawkBridgeNode:
 
         mock_client = MagicMock()
         mock_client.get_latest.side_effect = (
-            lambda message_type:
-            sample_global_position_msg
-            if message_type == "GLOBAL_POSITION_INT"
-            else None
+            lambda message_type: sample_global_position_msg if message_type == "GLOBAL_POSITION_INT" else None
         )
         mock_client_class.return_value = mock_client
 
@@ -130,26 +127,27 @@ class TestPixhawkBridgeNode:
         attitude_pub = MagicMock()
         init_pub = MagicMock()
 
-        with patch.object(
-            PixhawkTelemetry,
-            "create_publisher",
-            side_effect=self._publisher_factory(
-                global_pub,
-                attitude_pub,
-                init_pub,
+        with (
+            patch.object(
+                PixhawkTelemetry,
+                "create_publisher",
+                side_effect=self._publisher_factory(
+                    global_pub,
+                    attitude_pub,
+                    init_pub,
+                ),
             ),
-        ), patch.object(
-            PixhawkTelemetry,
-            "create_timer",
+            patch.object(
+                PixhawkTelemetry,
+                "create_timer",
+            ),
         ):
-
             node = PixhawkTelemetry(valid_pixhawk_config)
             node._tick()
 
         mock_to_global_position.assert_called_once()
         global_pub.publish.assert_called_once_with(ros_msg)
         init_pub.publish.assert_called_once_with(ros_msg)
-
 
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
@@ -168,10 +166,7 @@ class TestPixhawkBridgeNode:
 
         mock_client = MagicMock()
         mock_client.get_latest.side_effect = (
-            lambda message_type:
-            sample_attitude_msg
-            if message_type == "ATTITUDE"
-            else None
+            lambda message_type: sample_attitude_msg if message_type == "ATTITUDE" else None
         )
         mock_client_class.return_value = mock_client
 
@@ -182,19 +177,21 @@ class TestPixhawkBridgeNode:
         attitude_pub = MagicMock()
         init_pub = MagicMock()
 
-        with patch.object(
-            PixhawkTelemetry,
-            "create_publisher",
-            side_effect=self._publisher_factory(
-                global_pub,
-                attitude_pub,
-                init_pub,
+        with (
+            patch.object(
+                PixhawkTelemetry,
+                "create_publisher",
+                side_effect=self._publisher_factory(
+                    global_pub,
+                    attitude_pub,
+                    init_pub,
+                ),
             ),
-        ), patch.object(
-            PixhawkTelemetry,
-            "create_timer",
+            patch.object(
+                PixhawkTelemetry,
+                "create_timer",
+            ),
         ):
-
             node = PixhawkTelemetry(valid_pixhawk_config)
             node._tick()
 
@@ -203,7 +200,6 @@ class TestPixhawkBridgeNode:
             sample_attitude_msg,
         )
         attitude_pub.publish.assert_called_once_with(ros_msg)
-
 
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
@@ -222,19 +218,21 @@ class TestPixhawkBridgeNode:
         attitude_pub = MagicMock()
         init_pub = MagicMock()
 
-        with patch.object(
-            PixhawkTelemetry,
-            "create_publisher",
-            side_effect=self._publisher_factory(
-                global_pub,
-                attitude_pub,
-                init_pub,
+        with (
+            patch.object(
+                PixhawkTelemetry,
+                "create_publisher",
+                side_effect=self._publisher_factory(
+                    global_pub,
+                    attitude_pub,
+                    init_pub,
+                ),
             ),
-        ), patch.object(
-            PixhawkTelemetry,
-            "create_timer",
+            patch.object(
+                PixhawkTelemetry,
+                "create_timer",
+            ),
         ):
-
             node = PixhawkTelemetry(valid_pixhawk_config)
 
             init_position = MagicMock()
@@ -243,7 +241,6 @@ class TestPixhawkBridgeNode:
             node._publish_init_position()
 
         init_pub.publish.assert_called_once_with(init_position)
-
 
     @patch("ibn_mavlink.pixhawk_bridge.node.setup_logger")
     @patch("ibn_mavlink.pixhawk_bridge.node.MAVLinkClient")
@@ -262,19 +259,21 @@ class TestPixhawkBridgeNode:
         attitude_pub = MagicMock()
         init_pub = MagicMock()
 
-        with patch.object(
-            PixhawkTelemetry,
-            "create_publisher",
-            side_effect=self._publisher_factory(
-                global_pub,
-                attitude_pub,
-                init_pub,
+        with (
+            patch.object(
+                PixhawkTelemetry,
+                "create_publisher",
+                side_effect=self._publisher_factory(
+                    global_pub,
+                    attitude_pub,
+                    init_pub,
+                ),
             ),
-        ), patch.object(
-            PixhawkTelemetry,
-            "create_timer",
+            patch.object(
+                PixhawkTelemetry,
+                "create_timer",
+            ),
         ):
-
             node = PixhawkTelemetry(valid_pixhawk_config)
 
             node._init_position = None

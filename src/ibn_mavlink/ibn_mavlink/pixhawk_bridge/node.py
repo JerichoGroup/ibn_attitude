@@ -15,11 +15,15 @@ from ibn_mavlink.utils.logger_setup import setup_logger
 
 
 def load_config(path: Path) -> dict:
+    """Load and parse a YAML config file."""
+
     with path.open("r") as config_file:
         return yaml.safe_load(config_file)
 
 
 def ensure_ros_initialized() -> None:
+    """Initialize rclpy if it has not been initialized yet."""
+
     if not rclpy.ok():
         rclpy.init()
 
@@ -28,6 +32,8 @@ class PixhawkTelemetry(Node):
     """Bridge between Pixhawk MAVLink and ROS2."""
 
     def __init__(self, config: Dict[str, Any]) -> None:
+        """Set up publishers, the MAVLink client, and the publish timer."""
+
         ensure_ros_initialized()
 
         super().__init__("pixhawk_bridge_node")
@@ -38,17 +44,11 @@ class PixhawkTelemetry(Node):
         self.log_file = config["log"]["file_path"]
         self._logger = setup_logger("PixhawkTelemetry", self.log_file)
 
-        self._pub_global = self.create_publisher(
-            GlobalPositionInt, ros_config["global_position_topic"], 10
-        )
-        self._pub_attitude = self.create_publisher(
-            Attitude, ros_config["attitude_topic"], 10
-        )
-        self._pub_init = self.create_publisher(
-            GlobalPositionInt, ros_config["init_position_topic"], 10
-        )
+        self._pub_global = self.create_publisher(GlobalPositionInt, ros_config["global_position_topic"], 10)
+        self._pub_attitude = self.create_publisher(Attitude, ros_config["attitude_topic"], 10)
+        self._pub_init = self.create_publisher(GlobalPositionInt, ros_config["init_position_topic"], 10)
 
-        self._client = MAVLinkClient(
+        self._client: Optional[MAVLinkClient] = MAVLinkClient(
             mavlink_config["connection_string"],
             mavlink_config["baud_rate"],
             mavlink_config["stream_rate_hz"],
@@ -62,13 +62,13 @@ class PixhawkTelemetry(Node):
         self.create_timer(1.0 / publish_hz, self._tick)
 
         self._logger.info("Pixhawk Telemetry Node initialized")
-        self._logger.info(
-            f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud"
-        )
-
+        self._logger.info(f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud")
 
     def _tick(self) -> None:
         """Publish telemetry on timer."""
+
+        if self._client is None:
+            return
 
         global_position_msg = self._client.get_latest("GLOBAL_POSITION_INT")
         attitude_msg = self._client.get_latest("ATTITUDE")
@@ -81,7 +81,6 @@ class PixhawkTelemetry(Node):
             self._handle_global_position(global_position_msg)  # type: ignore[arg-type]
             self._publish_init_position()
 
-
     def _handle_global_position(self, msg: GlobalPositionMessage) -> None:
         """Handle global position message."""
 
@@ -93,21 +92,20 @@ class PixhawkTelemetry(Node):
 
         self._pub_global.publish(ros_msg)
 
-
     def _publish_init_position(self) -> None:
-        """Publish initial position on every tick after the first position is received"""
-        
+        """Publish initial position on every tick after the first position is received."""
+
         if self._init_position is not None:
             self._pub_init.publish(self._init_position)
 
-
     def destroy_node(self) -> None:
         """
-        Cleanly shut down external resources owned by the node.
-        Ensures MAVLink client is stopped before the ROS2 node is destroyed.
+        Shut down external resources owned by the node.
+
+        Ensures the MAVLink client is stopped before the ROS2 node is destroyed.
         """
-        
-        if getattr(self, "_client", None) is not None:
+
+        if self._client is not None:
             self._client.stop()
             self._client = None
 

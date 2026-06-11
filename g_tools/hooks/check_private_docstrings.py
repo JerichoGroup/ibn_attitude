@@ -1,25 +1,34 @@
 """pre-commit hook that checks for docstrings in private methods."""
 
 # ==================== Imports ====================
+import ast
 from pathlib import Path
-import re
 import sys
 from typing import List
 
 
-# ==================== Helper - has docstring ====================
-def has_docstring(lines: List[str], start_index: int) -> bool:
-    """Return True if a docstring is found immediately after the function definition."""
+# ==================== Helper - find undocumented ====================
+def find_undocumented(path: Path) -> List[int]:
+    """Return the line numbers of private functions missing a docstring."""
 
-    for i in range(start_index + 1, len(lines)):
-        stripped = lines[i].strip()
+    try:
+        tree = ast.parse(path.read_text())
+    except SyntaxError:
+        return []
 
-        if stripped == "" or stripped.startswith("#"):
+    missing: List[int] = []
+
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
 
-        return stripped.startswith('"""') or stripped.startswith("'''")
+        if not node.name.startswith("_"):
+            continue
 
-    return False
+        if ast.get_docstring(node) is None:
+            missing.append(node.lineno)
+
+    return missing
 
 
 # ==================== Main function ====================
@@ -28,14 +37,14 @@ def main() -> None:
 
     failed = False
 
-    for path in Path().rglob("*.py"):
-        lines = path.read_text().splitlines()
+    for filename in sys.argv[1:]:
+        path = Path(filename)
+        if path.suffix != ".py":
+            continue
 
-        for i, line in enumerate(lines):
-            if re.match(r"\s*def _[A-Za-z0-9_]*\(", line):
-                if not has_docstring(lines, i):
-                    print(f"{path}:{i+1}: Missing docstring for private method")
-                    failed = True
+        for lineno in find_undocumented(path):
+            print(f"{path}:{lineno}: Missing docstring for private method")
+            failed = True
 
     if failed:
         sys.exit(1)

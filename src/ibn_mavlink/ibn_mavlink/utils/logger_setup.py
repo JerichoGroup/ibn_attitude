@@ -1,23 +1,19 @@
 """Logger setup utilities."""
 
 import logging
-from logging import StreamHandler, FileHandler
+from logging import FileHandler, StreamHandler
 from pathlib import Path
 
 
-def setup_logger(name: str, log_file: str, level=logging.INFO) -> logging.Logger:
-    """
-    Create a logger that outputs to both stdout and a file.
-    """
+def setup_logger(name: str, log_file: str, level: int = logging.INFO) -> logging.Logger:
+    """Create a logger that outputs to both stdout and a file."""
 
     logger = logging.getLogger(name)
     logger.setLevel(level)
     logger.propagate = False
 
     if not logger.handlers:
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
         console_handler = StreamHandler()
         console_handler.setFormatter(formatter)

@@ -79,5 +79,5 @@ force-sort-within-sections = true
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["D104", "D100"]
-"test/*" = ["ALL"]
-"conftest.py" = ["ALL"]
+"**/test/**" = ["ALL"]
+"**/conftest.py" = ["ALL"]

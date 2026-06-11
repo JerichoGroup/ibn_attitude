@@ -21,6 +21,7 @@ sys.modules["interfaces.msg"] = mock_interfaces.msg
 # MAVLINK FIXTURE
 # -----------------------------
 
+
 @pytest.fixture
 def mock_mavlink_connection():
     """Mock pymavlink master connection."""
@@ -53,6 +54,7 @@ def mock_pymavlink(monkeypatch, mock_mavlink_connection):
 # IBN RESULT MESSAGE FIXTURE
 # -----------------------------
 
+
 @pytest.fixture
 def sample_ibn_result():
     """Valid IBNResult mock message."""
@@ -67,6 +69,7 @@ def sample_ibn_result():
 # -----------------------------
 # MAVLINK MESSAGES
 # -----------------------------
+
 
 @pytest.fixture
 def sample_global_position_msg():
@@ -105,6 +108,7 @@ def sample_attitude_msg():
 # -----------------------------
 # CONFIGS
 # -----------------------------
+
 
 @pytest.fixture
 def valid_pixhawk_config():

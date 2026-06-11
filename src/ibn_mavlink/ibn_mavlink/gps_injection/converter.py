@@ -6,7 +6,6 @@ from typing import Dict, Optional, Tuple
 
 from interfaces.msg import IBNResult
 
-
 GPS_POSITION_LENGTH = 3
 
 
@@ -21,7 +20,6 @@ class GPSInputPayload:
     vert_accuracy: float
     fix_type: int = 3
     satellites_visible: int = 10
-
 
     def to_json(self) -> Dict:
         """Convert to JSON-compatible dict."""
@@ -57,11 +55,10 @@ class IBNToGPSConverter:
 
         if not msg.position_valid:
             return None
-        
+
         if len(msg.position) != GPS_POSITION_LENGTH:
             return None
         return msg.position[0], msg.position[1], msg.position[2]
-
 
     @staticmethod
     def convert(msg: IBNResult) -> Optional[GPSInputPayload]:

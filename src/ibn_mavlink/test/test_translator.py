@@ -49,7 +49,6 @@ class TestMavlinkTranslator:
 
         assert ros_msg.vehicle_heading_angle == 180
 
-
     def test_to_attitude(self) -> None:
         """Test ATTITUDE translation."""
 
