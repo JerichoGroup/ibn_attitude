@@ -14,11 +14,13 @@ It runs two ROS nodes (entry points in `setup.py`):
 
 Three layers, deliberately separated so the data-mapping logic is testable without ROS or hardware:
 
-1. **Transport — `ibn_mavlink/mavlink/client.py` (`MAVLinkClient`).** Owns the pymavlink connection. Runs a daemon read thread that caches the *latest* message per type in a dict (`get_latest(msg_type)`); there is no queue, consumers always get the most recent frame. Handles heartbeat wait, stream-rate requests, and an automatic reconnect-with-backoff loop guarded by locks. `read_enabled=False` is used by the injection node (it only sends, never reads). `send_gps_input()` ignores velocity (EKF ignores it) and reuses `hdop` for vdop/horiz/vert accuracy.
+1. **Transport — `ibn_mavlink/mavlink/client.py` (`MAVLinkClient`).** Owns the pymavlink connection. Runs a daemon read thread that caches the *latest* message per type in a dict (`get_latest(msg_type)`); there is no queue, consumers always get the most recent frame. Handles heartbeat wait, stream-rate requests, and an automatic reconnect-with-backoff loop guarded by locks. Reconnect triggers on two conditions: a `recv` exception, or a **liveness timeout** (`heartbeat_timeout`, default 5 s) when no message has arrived — the latter matters because a dropped UDP link returns `None` rather than raising, so it would otherwise never reconnect. `read_enabled=False` is used by the injection node (it only sends, never reads). `send_gps_input()` intentionally sends velocity flagged-ignored (EKF ignores it), sends a fixed unitless `hdop`/`vdop` (a DOP, *not* meters), and sends `horiz_accuracy`/`vert_accuracy` separately in meters — these are distinct `GPSInputParams` fields, do not conflate them.
 2. **Translation — pure static methods, no I/O:**
    - `pixhawk_bridge/translator.py` (`MavlinkTranslator`): MAVLink message → ROS message. Values are passed through in MAVLink-native scaling (lat/lon as deg×1e7, alt in mm, etc.) — **no unit/frame conversion**. See README "MAVLink ↔ ROS GPS Conventions" for the field table.
    - `gps_injection/converter.py` (`IBNToGPSConverter`): `IBNResult` → `GPSInputPayload`, returning `None` for invalid positions (which callers treat as "skip").
 3. **Nodes — `*/node.py` (`PixhawkTelemetry`, `GPSInjectionNode`).** rclpy `Node`s that wire the above together on a timer. Both load config the same way: `get_package_share_directory("ibn_mavlink") / "config" / <file>.yaml`, so **config must be reinstalled (rebuilt) to take effect** — editing the source YAML alone does nothing at runtime. Both override `destroy_node()` to stop the MAVLink client before ROS teardown.
+   - **Logger gotcha:** rclpy's `Node` stores its own logger in `self._logger` (returned by `get_logger()`), so the app's file/stdout logger is held in **`self._app_logger`** instead — do not reassign `self._logger` or you clobber rclpy's.
+   - **`GPSInjectionNode` injection is decoupled from arrival:** `_callback` stores the latest payload + a `time.monotonic()` stamp whenever an `IBNResult` arrives; a separate timer (`inject_rate_hz`) sends it. If the payload goes older than `inject_max_age_s` (default 1 s) the loop stops injecting and clears it, so a frozen/last-known position is never re-injected as a fresh GPS lock. Injection resumes automatically when a fresh message arrives.
 
 **External dependency:** the custom messages (`Attitude`, `GlobalPositionInt`, `IBNResult`) live in a separate private repo, [`JerichoGroup/interfaces`](https://github.com/JerichoGroup/interfaces), cloned alongside this package in the Docker build. It is not vendored here.
 
@@ -51,6 +53,8 @@ colcon test --packages-select ibn_mavlink              # via colcon
 ```
 
 Tests run **without ROS or hardware**: `test/conftest.py` injects `MagicMock`s for the `interfaces` and `pymavlink` modules into `sys.modules` and provides sample-message / config fixtures. When adding tests that touch new `interfaces` messages or pymavlink calls, extend those mocks rather than importing the real packages.
+
+Note: `rclpy.create_subscription()` runs a type-support check that **rejects the mocked `interfaces` messages**, so `GPSInjectionNode` tests patch `create_subscription` (autouse fixture in `test_gps_injection_node.py`). `create_publisher` does not do this check, so the bridge tests don't need it.
 
 ## Linting & commit conventions
 
