@@ -42,7 +42,7 @@ class PixhawkTelemetry(Node):
         ros_config = config["ros"]
 
         self.log_file = config["log"]["file_path"]
-        self._logger = setup_logger("PixhawkTelemetry", self.log_file)
+        self._app_logger = setup_logger("PixhawkTelemetry", self.log_file)
 
         self._pub_global = self.create_publisher(GlobalPositionInt, ros_config["global_position_topic"], 10)
         self._pub_attitude = self.create_publisher(Attitude, ros_config["attitude_topic"], 10)
@@ -53,16 +53,21 @@ class PixhawkTelemetry(Node):
             mavlink_config["baud_rate"],
             mavlink_config["stream_rate_hz"],
             read_enabled=True,
-            logger=self._logger,
+            logger=self._app_logger,
         )
 
         self._init_position: Optional[GlobalPositionInt] = None
 
         publish_hz = ros_config["publish_rate_hz"]
+        if publish_hz <= 0:
+            raise ValueError("publish_rate_hz must be greater than 0")
+
         self.create_timer(1.0 / publish_hz, self._tick)
 
-        self._logger.info("Pixhawk Telemetry Node initialized")
-        self._logger.info(f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud")
+        self._app_logger.info("Pixhawk Telemetry Node initialized")
+        self._app_logger.info(
+            f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud"
+        )
 
     def _tick(self) -> None:
         """Publish telemetry on timer."""
@@ -88,7 +93,7 @@ class PixhawkTelemetry(Node):
 
         if self._init_position is None:
             self._init_position = ros_msg
-            self._logger.info("First global position received (init set)")
+            self._app_logger.info("First global position received (init set)")
 
         self._pub_global.publish(ros_msg)
 

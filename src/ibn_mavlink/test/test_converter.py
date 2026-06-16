@@ -228,33 +228,6 @@ class TestGPSInputPayload:
         assert payload.fix_type == expected_fix_type
         assert payload.satellites_visible == expected_satellites
 
-    def test_to_json(self) -> None:
-        """Test JSON conversion."""
-
-        test_lat = 37.7749
-        test_lon = -122.4194
-        test_alt = 100.0
-        expected_fix_type = 3
-        expected_lat_int = 377749000
-        expected_lon_int = -1224194000
-        expected_satellites = 10
-
-        payload = GPSInputPayload(lat=test_lat, lon=test_lon, alt=test_alt, horiz_accuracy=1.0, vert_accuracy=2.0)
-
-        json_data = payload.to_json()
-
-        assert "time_usec" in json_data
-        assert json_data["gps_id"] == 0
-        assert json_data["ignore_flags"] == 0
-        assert json_data["fix_type"] == expected_fix_type
-        assert json_data["lat"] == expected_lat_int
-        assert json_data["lon"] == expected_lon_int
-        assert json_data["alt"] == test_alt
-        assert json_data["horiz_accuracy"] == 1.0
-        expected_vert_accuracy = 2.0
-        assert json_data["vert_accuracy"] == expected_vert_accuracy
-        assert json_data["satellites_visible"] == expected_satellites
-
 
 class TestGPSPositionLength:
     """Tests for GPS_POSITION_LENGTH constant."""

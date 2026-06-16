@@ -23,7 +23,9 @@ class GPSInputParams:
     ve: float = 0.0
     vd: float = 0.0
     satellites: int = 10
-    hdop: float = 1.0
+    hdop: float = 1.0  # unitless dilution-of-precision (NOT meters)
+    horiz_accuracy: float = 1.0  # meters
+    vert_accuracy: float = 1.0  # meters
 
 
 class MAVLinkClient:
@@ -37,6 +39,7 @@ class MAVLinkClient:
         read_enabled: bool = True,
         logger: Optional[logging.Logger] = None,
         recv_timeout: float = 0.05,
+        heartbeat_timeout: float = 5.0,
     ) -> None:
         """Open a MAVLink connection and, if reading is enabled, start the read thread."""
 
@@ -46,6 +49,8 @@ class MAVLinkClient:
         self._baud = baud
         self._rate = rate
         self._recv_timeout = recv_timeout
+        self._heartbeat_timeout = heartbeat_timeout
+        self._last_msg_time = 0.0
 
         self._latest: Dict[str, Any] = {}
         self._lock = threading.Lock()
@@ -88,7 +93,10 @@ class MAVLinkClient:
                 pass
             raise RuntimeError("No heartbeat received")
 
-        self._master = master
+        with self._conn_lock:
+            self._master = master
+
+        self._last_msg_time = time.monotonic()
 
         self._logger.info("Connected to Pixhawk")
 
@@ -129,16 +137,30 @@ class MAVLinkClient:
                 msg = master.recv_match(blocking=False)
 
                 if msg is None:
-                    time.sleep(self._recv_timeout)
+                    if self._link_timed_out():
+                        self._logger.warning("MAVLink link silent past timeout, reconnecting...")
+                        self._reconnect()
+                    else:
+                        time.sleep(self._recv_timeout)
                     continue
 
                 with self._lock:
                     self._latest[msg.get_type()] = msg
 
+                self._last_msg_time = time.monotonic()
+
             except Exception as e:
                 self._logger.error(f"MAVLink read error: {e}")
                 self._reconnect()
                 time.sleep(0.5)
+
+    def _link_timed_out(self) -> bool:
+        """Return True if no message has arrived within the heartbeat timeout."""
+
+        if self._heartbeat_timeout <= 0:
+            return False
+
+        return (time.monotonic() - self._last_msg_time) > self._heartbeat_timeout
 
     def _disconnect(self) -> None:
         """Close existing MAVLink connection safely."""
@@ -229,14 +251,14 @@ class MAVLinkClient:
                 lat_int,
                 lon_int,
                 params.alt,  # meters
-                params.hdop,  # hdop
-                params.hdop,  # vdop
+                params.hdop,  # hdop (unitless DOP)
+                params.hdop,  # vdop (unitless DOP)
                 params.vn,  # m/s
                 params.ve,
                 params.vd,
                 0.1,  # speed_accuracy
-                params.hdop,  # horiz_accuracy
-                params.hdop,  # vert_accuracy
+                params.horiz_accuracy,  # horiz_accuracy (meters)
+                params.vert_accuracy,  # vert_accuracy (meters)
                 params.satellites,
                 0,  # yaw unavailable
             )

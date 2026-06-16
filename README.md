@@ -78,7 +78,7 @@ docker run -it --rm \
 
 The system uses two YAML configuration files located in:
 
-src/ibn_attitude/config/
+src/ibn_mavlink/ibn_mavlink/config/
 
 - gps_injection.yaml → controls GPS/IBN injection behavior
 - pixhawk_bridge.yaml → controls MAVLink ↔ ROS2 bridge settings
@@ -94,6 +94,7 @@ This file controls the GPS/IBN injection pipeline and ROS publishing rate.
 ros:
   ibn_result_topic: "/IBN/result"
   inject_rate_hz: 10
+  inject_max_age_s: 1.0
 
 log:
   file_path: "/logs/gps_injection.log"
@@ -107,6 +108,10 @@ ROS:
 
 - inject_rate_hz
   Frequency (Hz) at which GPS/IBN injection runs.
+
+- inject_max_age_s
+  Maximum age (seconds) of the last received position before injection stops.
+  Prevents a stale fix from being re-injected as a fresh GPS lock.
 
 Log:
 
@@ -127,9 +132,10 @@ mavlink:
   stream_rate_hz: 0   # 0 disables MAVLink streaming requests
 
 ros:
-  attitude_topic_name: "/mavlink/attitude"
-  altitude_topic_name: "/mavlink/altitude"
-  hz: 50
+  publish_rate_hz: 20
+  global_position_topic: "/monitor/gps_raw_int"
+  attitude_topic: "/mavlink/attitude"
+  init_position_topic: "/IBN/init_pos"
 
 ### Parameters
 
@@ -146,14 +152,17 @@ MAVLink:
 
 ROS:
 
-- attitude_topic_name
+- publish_rate_hz
+  Update frequency (Hz) of the bridge publish timer.
+
+- global_position_topic
+  ROS2 topic for the raw GLOBAL_POSITION_INT telemetry.
+
+- attitude_topic
   ROS2 topic for vehicle attitude data.
 
-- altitude_topic_name
-  ROS2 topic for altitude data.
-
-- hz
-  Update frequency for the bridge node.
+- init_position_topic
+  ROS2 topic on which the first received global position is (re)published.
 ---
 
 ## MAVLink ↔ ROS GPS Conventions
@@ -207,10 +216,10 @@ When injecting GPS data into Pixhawk:
 - `lat/lon` → `int(lat/lon × 1e7)`
 - `alt` → meters (passed directly)
 - timestamps → microseconds (`time.time() * 1e6`)
-- `hdop` is reused for:
-  - VDOP
-  - horizontal accuracy
-  - vertical accuracy
+- `hdop`/`vdop` are unitless dilution-of-precision values (a fixed, sane default — **not** the metric accuracy)
+- `horiz_accuracy`/`vert_accuracy` carry the position accuracy in **meters** (from `IBNResult.position_accuracy`)
+- velocity is sent but flagged ignored (`GPS_INPUT_IGNORE_FLAG_VEL_HORIZ | VEL_VERT`) because the EKF ignores it
+- `fix_type` (3D) and `satellites` are fixed assumptions, not derived from solution quality
 
 ---
 

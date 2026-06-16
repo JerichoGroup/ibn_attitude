@@ -226,10 +226,12 @@ class TestMAVLinkClientCoordinateConversion:
         assert vd == expected_vd
 
     @patch("ibn_mavlink.mavlink.client.mavutil")
-    def test_hdop_to_accuracy_conversion(self, mock_mavutil: "MagicMock") -> None:
-        """Test HDOP values passed correctly."""
+    def test_dop_and_accuracy_passed_independently(self, mock_mavutil: "MagicMock") -> None:
+        """Test that DOP (unitless) and accuracy (meters) are sent in separate fields."""
 
-        hdop = 2.0
+        hdop = 1.2
+        horiz_accuracy = 2.0
+        vert_accuracy = 3.0
 
         mock_master = MagicMock()
         mock_master.target_system = 1
@@ -246,6 +248,8 @@ class TestMAVLinkClientCoordinateConversion:
             lon=-122.4194,
             alt=100.0,
             hdop=hdop,
+            horiz_accuracy=horiz_accuracy,
+            vert_accuracy=vert_accuracy,
         )
 
         client.send_gps_input(params)
@@ -256,13 +260,13 @@ class TestMAVLinkClientCoordinateConversion:
 
         hdop_result = call_args[9]
         vdop_result = call_args[10]
-        horiz_accuracy = call_args[15]
-        vert_accuracy = call_args[16]
+        horiz_accuracy_result = call_args[15]
+        vert_accuracy_result = call_args[16]
 
         assert hdop_result == hdop
         assert vdop_result == hdop
-        assert horiz_accuracy == hdop
-        assert vert_accuracy == hdop
+        assert horiz_accuracy_result == horiz_accuracy
+        assert vert_accuracy_result == vert_accuracy
 
     @patch("ibn_mavlink.mavlink.client.mavutil")
     def test_satellite_count(self, mock_mavutil: "MagicMock") -> None:

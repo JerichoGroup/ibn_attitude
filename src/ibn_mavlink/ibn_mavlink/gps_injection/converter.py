@@ -1,8 +1,7 @@
 """Data models and converters for GPS injection."""
 
 from dataclasses import dataclass
-import time
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 from interfaces.msg import IBNResult
 
@@ -20,30 +19,6 @@ class GPSInputPayload:
     vert_accuracy: float
     fix_type: int = 3
     satellites_visible: int = 10
-
-    def to_json(self) -> Dict:
-        """Convert to JSON-compatible dict."""
-
-        return {
-            "time_usec": int(time.time() * 1e6),
-            "gps_id": 0,
-            "ignore_flags": 0,
-            "time_week_ms": 0,
-            "time_week": 0,
-            "fix_type": self.fix_type,
-            "lat": int(self.lat * 1e7),
-            "lon": int(self.lon * 1e7),
-            "alt": float(self.alt),
-            "hdop": self.horiz_accuracy,
-            "vdop": self.vert_accuracy,
-            "vn": 0.0,
-            "ve": 0.0,
-            "vd": 0.0,
-            "speed_accuracy": 0.1,
-            "horiz_accuracy": self.horiz_accuracy,
-            "vert_accuracy": self.vert_accuracy,
-            "satellites_visible": self.satellites_visible,
-        }
 
 
 class IBNToGPSConverter:

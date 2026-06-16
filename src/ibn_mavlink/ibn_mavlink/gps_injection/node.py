@@ -1,6 +1,7 @@
 """ROS2 node for GPS injection back to Pixhawk."""
 
 from pathlib import Path
+import time
 from typing import Any, Dict, Optional
 
 from ament_index_python import get_package_share_directory
@@ -42,33 +43,38 @@ class GPSInjectionNode(Node):
         ros = config["ros"]
 
         self.log_file = config["log"]["file_path"]
-        self._logger = setup_logger("GPSInjection", self.log_file)
+        self._app_logger = setup_logger("GPSInjection", self.log_file)
 
         self._client: Optional[MAVLinkClient] = MAVLinkClient(
             mavlink_config["connection_string"],
             mavlink_config["baud_rate"],
             mavlink_config["stream_rate_hz"],
             read_enabled=False,
-            logger=self._logger,
+            logger=self._app_logger,
         )
 
-        try:
-            self._subscription = self.create_subscription(
-                IBNResult,
-                ros["ibn_result_topic"],
-                self._callback,
-                10,
-            )
-        except Exception:
-            self._subscription = None
+        self._subscription = self.create_subscription(
+            IBNResult,
+            ros["ibn_result_topic"],
+            self._callback,
+            10,
+        )
 
         self._inject_rate_hz = ros.get("inject_rate_hz", 10)
+        if self._inject_rate_hz <= 0:
+            raise ValueError("inject_rate_hz must be greater than 0")
+
+        self._max_age_s = ros.get("inject_max_age_s", 1.0)
+
         self._inject_timer = self.create_timer(1.0 / self._inject_rate_hz, self._inject_loop)
 
         self._latest_payload: Optional[GPSInputPayload] = None
+        self._payload_time = 0.0
 
-        self._logger.info("GPS Injection Node initialized")
-        self._logger.info(f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud")
+        self._app_logger.info("GPS Injection Node initialized")
+        self._app_logger.info(
+            f"Connecting to {mavlink_config['connection_string']} at {mavlink_config['baud_rate']} baud"
+        )
 
     def _callback(self, msg: IBNResult) -> None:
         """Store latest IBNResult for injection."""
@@ -77,11 +83,12 @@ class GPSInjectionNode(Node):
 
         if gps_payload is None:
             self._latest_payload = None
-            self._logger.warning("Invalid position, skipping")
+            self._app_logger.warning("Invalid position, skipping")
             return
 
         self._latest_payload = gps_payload
-        self._logger.info(
+        self._payload_time = time.monotonic()
+        self._app_logger.info(
             f"Received GPS lat={gps_payload.lat:.7f}, " f"lon={gps_payload.lon:.7f}, alt={gps_payload.alt:.2f}"
         )
 
@@ -91,6 +98,11 @@ class GPSInjectionNode(Node):
         if self._latest_payload is None or self._client is None:
             return
 
+        if (time.monotonic() - self._payload_time) > self._max_age_s:
+            self._latest_payload = None
+            self._app_logger.warning("GPS payload stale, skipping injection")
+            return
+
         payload = self._latest_payload
 
         try:
@@ -98,16 +110,14 @@ class GPSInjectionNode(Node):
                 lat=payload.lat,
                 lon=payload.lon,
                 alt=payload.alt,
-                vn=0.0,
-                ve=0.0,
-                vd=0.0,
                 satellites=payload.satellites_visible,
-                hdop=payload.horiz_accuracy,
+                horiz_accuracy=payload.horiz_accuracy,
+                vert_accuracy=payload.vert_accuracy,
             )
             self._client.send_gps_input(params)
 
         except Exception as e:
-            self._logger.error(f"Failed to inject GPS: {e}")
+            self._app_logger.error(f"Failed to inject GPS: {e}")
 
     def destroy_node(self) -> None:
         """
