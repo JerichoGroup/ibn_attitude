@@ -1,0 +1,8 @@
+[general]
+ignore=B6
+
+[title-must-not-contain-word]
+words=wip,todo,fixme
+
+[title-match-regex]
+regex=^(?!.*(?i)wip)(?!.*(?i)todo)(?!.*(?i)fixme).*

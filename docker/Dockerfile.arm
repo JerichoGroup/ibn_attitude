@@ -1,0 +1,99 @@
+ARG BASE_IMAGE=dustynv/ros:galactic-ros-base-l4t-r32.4.4
+FROM --platform=linux/arm64/v8 ${BASE_IMAGE} AS build
+
+ARG ATTITUDE_TAG=fixing_ros_pkg
+ARG INTERFACES_TAG=v0.5.0
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    SHELL=/bin/bash \
+    ROS_DISTRO=galactic \
+    LANG=en_US.UTF-8
+
+SHELL ["/bin/bash", "-c"]
+
+WORKDIR /tmp
+
+# Locale
+RUN locale-gen en_US en_US.UTF-8 && \
+	update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+
+ENV LANG=en_US.UTF-8
+
+# Clean broken ROS apt sources
+RUN rm -f /etc/apt/sources.list.d/ros2* && \
+    rm -f /etc/apt/sources.list.d/ros-latest.list
+
+# Dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        git \
+        python3-pip \
+        python3-cffi \
+        python3-setuptools \
+        python3-wheel \
+        python3-dev \
+        pkg-config \
+        nano \
+        vim \
+        tmux \
+        gdb \
+        iputils-ping \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python alias
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+
+# Python packages
+RUN python3 -m pip install --no-cache-dir \
+    dataclasses \
+    "Cython<3.0" \
+    pyserial \
+    toml \
+    jetson-stats \
+    "pymavlink==2.4.40"
+
+WORKDIR /root/dev
+
+COPY github_token.txt /tmp/github_token.txt
+
+RUN GITHUB_TOKEN=$(cat /tmp/github_token.txt) && \
+    mkdir -p src && \
+    git clone --branch=${ATTITUDE_TAG} --depth 1 \
+      https://${GITHUB_TOKEN}:x-oauth-basic@github.com/JerichoGroup/ibn_attitude.git src/ibn_attitude && \
+    git clone --branch=${INTERFACES_TAG} --depth 1 \
+      https://${GITHUB_TOKEN}:x-oauth-basic@github.com/JerichoGroup/interfaces.git src/interfaces && \
+    rm -f /tmp/github_token.txt
+
+WORKDIR /root/dev
+
+# Install ROS deps
+RUN source /opt/ros/${ROS_DISTRO}/install/setup.bash && \
+    rosdep update && \
+    rosdep install --from-paths src --ignore-src -r -y
+
+# Build workspace
+RUN source /opt/ros/${ROS_DISTRO}/install/setup.bash && \
+    cd /root/dev && \
+    colcon build
+
+
+# Runtime image
+FROM nvcr.io/nvidia/l4t-base:r32.4.4
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    SHELL=/bin/bash \
+    ROS_DISTRO=galactic \
+    LANG=en_US.UTF-8
+
+SHELL ["/bin/bash", "-c"]
+
+COPY --from=build / /
+
+WORKDIR /root/dev/
+
+COPY docker/entrypoint_*.sh /
+RUN chmod +x /entrypoint_*.sh
+
+CMD ["bash"]
