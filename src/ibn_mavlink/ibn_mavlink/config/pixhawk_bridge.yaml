@@ -1,0 +1,13 @@
+mavlink:
+  connection_string: "127.0.0.1:14551"
+  baud_rate: 115200
+  stream_rate_hz: 50
+
+ros:
+  publish_rate_hz: 20
+  global_position_topic: "/monitor/gps_raw_int"
+  attitude_topic: "/mavlink/attitude"
+  init_position_topic: "/IBN/init_pos"
+
+log:
+  file_path: "/logs/pixhawk_bridge.log"

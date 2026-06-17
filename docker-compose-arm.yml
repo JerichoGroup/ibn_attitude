@@ -1,0 +1,48 @@
+services:
+  pixhawk_bridge:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.arm
+    image: pixhawk_bridge:arm
+    container_name: pixhawk_bridge_arm
+
+    depends_on:
+      - mavproxy
+
+    network_mode: host
+    privileged: true
+
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
+      - /dev/ttyACM1:/dev/ttyACM1
+
+    environment:
+      - QT_X11_NO_MITSHM=1
+      - ROS_DOMAIN_ID=42
+
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    command: bash -c "./entrypoint_arm.sh"
+
+  mavproxy:
+    image: sitin/mavproxy:latest
+    container_name: ibn_mavproxy_arm
+
+    network_mode: host
+    privileged: true
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+    environment:
+      - ROS_DOMAIN_ID=42
+
+    volumes:
+      - /dev:/dev
+
+    command: >
+      --master=/dev/ttyACM0
+      --baudrate=115200
+      --out=udp:127.0.0.1:14550
+      --out=udp:127.0.0.1:14551

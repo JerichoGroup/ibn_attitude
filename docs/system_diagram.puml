@@ -1,0 +1,21 @@
+@startuml
+skinparam rectangle {
+  BackgroundColor orange
+  CornerRadius 10
+  StereotypeFontColor white
+  FontStyle bold
+}
+
+rectangle "Pixhawk" as p <<hardware>> #orange
+
+card "pixhawk_bridge" as bridge <<node>>
+card "IBN" as ibn <<service>>
+card "gps_injection" as gps <<node>>
+card "Log File" as log <<output>>
+
+p -> bridge
+bridge -> ibn
+ibn -> gps
+gps -> log
+
+@enduml
